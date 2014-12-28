@@ -1,0 +1,15 @@
+# SMIB Test AVR
+# -------------
+
+Vref = REF()
+Vt = INPUT()
+N3 = SUM(Vref,-Vt)
+N4 = LDLAG(N3,1,10)
+Vfd = LAG(N4,100,0.1)
+
+INIT
+####
+SIGNAL = N4 = MULT(Vfd,0.01)
+SIGNAL = Vref = SUM(Vt,N4)
+STATE = Vfd = MULT(Vfd,0.01)
+STATE = N4 = MULT(Vfd,0.01)
