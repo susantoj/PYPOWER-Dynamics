@@ -22,15 +22,16 @@ Parses, initialises and solves a dynamic controller model file (*.dyn)
 
 """
 
-import euler_blocks as blocks
+import explicit_blocks as blocks
 import numpy as np
 
 class controller:
-    def __init__(self, filename):
+    def __init__(self, filename, iopt):
         self.signals = {}
         self.states = {}
         self.equations = []
         self.init = []
+        self.opt = iopt
         
         self.parser(filename)
     
@@ -135,21 +136,21 @@ class controller:
             if block == 'LAG':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.lag_block(h,x0,yi,p)
+                yo, x1 = blocks.lag_block(h,x0,yi,p,self.opt)
                 self.states[signal] = x1
                 self.signals[signal] = yo
                 
             elif block == 'INT':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.int_block(h,x0,yi,p)
+                yo, x1 = blocks.int_block(h,x0,yi,p,self.opt)
                 self.states[signal] = x1
                 self.signals[signal] = yo
             
             elif block == 'LDLAG':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.leadlag_block(h,x0,yi,p)
+                yo, x1 = blocks.leadlag_block(h,x0,yi,p,self.opt)
                 self.states[signal] = x1
                 self.signals[signal] = yo
             

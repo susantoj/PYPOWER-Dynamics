@@ -43,10 +43,14 @@ if __name__ == '__main__':
     # Open output file
     f = open('output.csv', 'w')
     
+    # Integrator option
+    iopt = 'mod_euler'
+    #iopt = 'runge_kutta'
+    
     # Create dynamic model objects
-    oCtrl = controller('smib.dyn')
-    #oMach = sym_order4('smib_round.mach')
-    oMach = sym_order6('smib_round.mach')     
+    oCtrl = controller('smib.dyn',iopt)
+    #oMach = sym_order4('smib_round.mach',iopt)
+    oMach = sym_order6('smib_round.mach',iopt)     
     
     ##################
     # INITIALISATION #

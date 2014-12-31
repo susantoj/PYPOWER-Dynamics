@@ -17,20 +17,19 @@
 
 """
 PYPOWER-Dynamics
-Functions for standard blocks
-(using modified Euler method for integration)
+Functions for standard blocks (using explicit integrators)
 
 """
 
 import numpy as np
-from integrators import mod_euler, runge_kutta
+from integrators import integrate
 
 # Lag block
 # K / (1 + sT)
 # p = [K, T]
-def lag_block(h,x0,yi,p):   
+def lag_block(h,x0,yi,p,opt):   
     f = '(yi - x) / p[1]'
-    x1 = mod_euler(x0,h,f,yi,p)
+    x1 = integrate(x0,h,f,yi,p,opt)
     yo = p[0] * x1
             
     return yo, x1
@@ -38,9 +37,9 @@ def lag_block(h,x0,yi,p):
 # Integrator block    
 # K / sT    
 # p = [K, T]
-def int_block(h,x0,yi,p):
+def int_block(h,x0,yi,p,opt):
     f = 'yi * p[0] / p[1]'
-    x1 = mod_euler(x0,h,f,yi,p)
+    x1 = integrate(x0,h,f,yi,p,opt)
     yo = x1
             
     return yo, x1
@@ -48,9 +47,9 @@ def int_block(h,x0,yi,p):
 # Lead-Lag block
 # (1 + sTa) / (1 + sTb)
 # p = [Ta, Tb]
-def leadlag_block(h,x0,yi,p):  
+def leadlag_block(h,x0,yi,p,opt):  
     f = '(yi - x) / p[1]'
-    x1 = mod_euler(x0,h,f,yi,p)
+    x1 = integrate(x0,h,f,yi,p,opt)
     yo = x1 + p[0] * (yi - x0) / p[1]
     
     return yo, x1

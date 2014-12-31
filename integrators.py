@@ -23,6 +23,20 @@ Generic explicit numerical integrators
 
 import numpy as np
 
+def integrate(x0,h,f,yi,p,opt):
+    """
+    Integrator function wrapper
+    """
+
+    if opt == 'mod_euler':
+        x1 = mod_euler(x0,h,f,yi,p)
+    elif opt == 'runge_kutta':    
+        x1 = runge_kutta(x0,h,f,yi,p)
+    else:
+        print('WARNING: integration algorithm ' + str(opt) + ' not found...')
+    
+    return x1
+    
 def mod_euler(x0,h,f,yi,p):
     """
     Modified Euler integration step

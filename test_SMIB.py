@@ -53,10 +53,14 @@ if __name__ == '__main__':
     # Load PYPOWER case
     ppc = loadcase('smib_case.py')
     
+    # Integrator option
+    iopt = 'mod_euler'
+    #iopt = 'runge_kutta'
+    
     # Create dynamic model objects
-    oCtrl = controller('smib.dyn')
-    oMach = sym_order4('smib_round.mach')
-    #oMach = sym_order6('smib_round.mach')     
+    oCtrl = controller('smib.dyn', iopt)
+    #oMach = sym_order4('smib_round.mach', iopt)
+    oMach = sym_order6('smib_round.mach', iopt)     
     oGrid = ext_grid(0.01)
     
     ##################
@@ -84,7 +88,7 @@ if __name__ == '__main__':
     #y_grid = np.complex(oGrid.params['Ra'], -0.5 * (oGrid.params['Xdpp'] + oGrid.params['Xqpp'])) / \
     #        np.complex(oGrid.params['Ra'] ** 2, oGrid.params['Xdpp'] * oGrid.params['Xqpp'])
     Ybus[0,0] = Ybus[0,0] + 1 / (1j * oGrid.Xdp)
-    Ybus[1,1] = Ybus[1,1] + 1 / (oMach.params['Ra'] + 1j * 0.5 * (oMach.params['Xdp'] + oMach.params['Xdp']))
+    Ybus[1,1] = Ybus[1,1] + 1 / (oMach.params['Ra'] + 1j * 0.5 * (oMach.params['Xdpp'] + oMach.params['Xqpp']))
     
     # Add equivalent load admittance to Ybus matrix
     Pl, Ql = ppc["bus"][:, PD], ppc["bus"][:, QD]

@@ -22,13 +22,14 @@ PYPOWER-Dynamics
 """
 
 import numpy as np
-from integrators import mod_euler, runge_kutta
+from integrators import integrate
 
 class sym_order4:
-    def __init__(self, filename):
+    def __init__(self, filename, iopt):
         self.signals = {}
         self.states = {}
         self.params = {}
+        self.opt = iopt
         
         self.parser(filename)
     
@@ -137,23 +138,23 @@ class sym_order4:
         p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
         yi = [self.signals['Vfd'], self.signals['Id']]
         f = '(yi[0] - (p[0] - p[1]) * yi[1] - x) / p[2]'
-        Eqp_1 = runge_kutta(Eqp_0,h,f,yi,p)
+        Eqp_1 = integrate(Eqp_0,h,f,yi,p,self.opt)
         
         p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
         yi = self.signals['Iq']
         f = '((p[0] - p[1]) * yi - x) / p[2]'
-        Edp_1 = runge_kutta(Edp_0,h,f,yi,p)
+        Edp_1 = integrate(Edp_0,h,f,yi,p,self.opt)
         
         # Solve swing equation
         p = self.params['H']
         yi = [self.signals['Pm'], self.signals['P']]
         f = '1 /( 2 * p) * (yi[0] - yi[1])'
-        omega_1 = runge_kutta(omega_0,h,f,yi,p)
+        omega_1 = integrate(omega_0,h,f,yi,p,self.opt)
         
         p = self.params['H']
         yi = omega_0
         f = '314.16 * (yi - 1)'
-        delta_1 = runge_kutta(delta_0,h,f,yi,p)
+        delta_1 = integrate(delta_0,h,f,yi,p,self.opt)
         
         # Update state variables
         self.states['Eqp'] = Eqp_1
