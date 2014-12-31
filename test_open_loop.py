@@ -43,8 +43,10 @@ if __name__ == '__main__':
     # Open output file
     f = open('output.csv', 'w')
     
-    # Integrator option
-    iopt = 'mod_euler'
+    # Program options
+    h = 0.01                # step length (s)
+    t_sim = 15              # simulation time (s)
+    iopt = 'mod_euler'      # integrator option
     #iopt = 'runge_kutta'
     
     # Create dynamic model objects
@@ -84,8 +86,8 @@ if __name__ == '__main__':
     vt = v_gen
     f.write('time,Vref,Vt,Vfd,Id,Iq,Vd,Vq,P,Q,Pm,omega,delta\n')
     print('Simulating...')
-    for t in range(1501):
-        if np.mod(t,100) == 0:
+    for t in range(int(t_sim / h) + 1):
+        if np.mod(t,1/h) == 0:
             print('t=' + str(t*h) + 's')
             
         # Controller and machine interfacing
