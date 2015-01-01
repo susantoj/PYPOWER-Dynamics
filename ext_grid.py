@@ -26,15 +26,16 @@ import numpy as np
 from integrators import mod_euler, runge_kutta
 
 class ext_grid:
-    def __init__(self, Xdp):
+    def __init__(self, Xdp, gen_no):
         self.Xdp = Xdp
         self.E = 1
+        self.gen_no = gen_no
         
     def initialise(self,vt0,S0):
         """
         Initialise grid emf based on load flow voltage and grid current injection
         """
-        # Calculate initial grid current
+        # Calculate initial grid current and voltage source
         Ig0 = np.conj(S0 / vt0)       
         self.E = vt0 + np.complex(0,self.Xdp) * Ig0
     

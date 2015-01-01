@@ -28,6 +28,8 @@ from integrators import integrate
 
 class sym_order6:
     def __init__(self, filename, iopt):
+        self.id = ''
+        self.gen_no = 0
         self.signals = {}
         self.states = {}
         self.params = {}
@@ -44,7 +46,12 @@ class sym_order6:
         for line in f:
             if line[0] != '#' and line.strip() != '':   # Ignore comments and blank lines
                 tokens = line.strip().split('=')
-                self.params[tokens[0].strip()] = float(tokens[1].strip())
+                if tokens[0].strip() == 'ID':
+                    self.id = tokens[1].strip()
+                elif tokens[0].strip() == 'GEN_NO':
+                    self.gen_no = int(tokens[1].strip())
+                else:
+                    self.params[tokens[0].strip()] = float(tokens[1].strip())
                 
         f.close()
     

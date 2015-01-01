@@ -26,6 +26,8 @@ from sym_order6 import sym_order6
 from sym_order4 import sym_order4
 from ext_grid import ext_grid
 
+from mod_Ybus import mod_Ybus
+
 from scipy.sparse.linalg import splu
 import numpy as np
 import matplotlib.pyplot as plt
@@ -63,7 +65,14 @@ if __name__ == '__main__':
     oCtrl = controller('smib.dyn', iopt)
     #oMach = sym_order4('smib_round.mach', iopt)
     oMach = sym_order6('smib_round.mach', iopt)     
-    oGrid = ext_grid(0.01)
+    oGrid = ext_grid(0.01, 0)
+    
+    # Create dictionary of elements
+    # Hard-coded placeholder (to be replaced by a more generic loop)
+    elements = {}
+    elements[oCtrl.id] = oCtrl
+    elements[oMach.id] = oMach
+    elements['grid'] = oGrid
     
     ##################
     # INITIALISATION #
@@ -81,36 +90,22 @@ if __name__ == '__main__':
     baseMVA, bus, branch = ppc_int["baseMVA"], ppc_int["bus"], ppc_int["branch"]
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
     
+    # Build modified Ybus matrix
+    Ybus = mod_Ybus(Ybus, elements, bus, ppc_int['gen'])
+    
     # Calculate initial voltage phasors
     v0 = results["bus"][:, VM] * (np.cos(np.radians(results["bus"][:, VA])) + 1j * np.sin(np.radians(results["bus"][:, VA])))
     
-    # Set up augmented Ybus matrix
-    #y_gen = np.complex(oMach.params['Ra'], -0.5 * (oMach.params['Xdpp'] + oMach.params['Xqpp'])) / \
-    #        np.complex(oMach.params['Ra'] ** 2, oMach.params['Xdpp'] * oMach.params['Xqpp'])
-    #y_grid = np.complex(oGrid.params['Ra'], -0.5 * (oGrid.params['Xdpp'] + oGrid.params['Xqpp'])) / \
-    #        np.complex(oGrid.params['Ra'] ** 2, oGrid.params['Xdpp'] * oGrid.params['Xqpp'])
-    Ybus[0,0] = Ybus[0,0] + 1 / (1j * oGrid.Xdp)
-    Ybus[1,1] = Ybus[1,1] + 1 / (oMach.params['Ra'] + 1j * 0.5 * (oMach.params['Xdpp'] + oMach.params['Xqpp']))
-    
-    # Add equivalent load admittance to Ybus matrix
-    Pl, Ql = ppc["bus"][:, PD], ppc["bus"][:, QD]
-    for i in range(len(Pl)):
-        S_load = np.complex(Pl[i],Ql[i])
-        y_load = S_load / results["bus"][i, VM] ** 2
-        Ybus[i,i] = Ybus[i,i] + y_load
-    
-    # Calculate grid current
-    grid_bus = 0    # Bus index for grid (placeholder)
-    S_grid = np.complex(results["gen"][grid_bus, 1] / baseMVA, results["gen"][grid_bus, 2] / baseMVA)
-    v_ang = np.radians(bus[grid_bus, VA])
-    v_grid = bus[grid_bus, VM] * np.complex(np.cos(v_ang), np.sin(v_ang)) 
+    # Initialise grid and machine from load flow
+    # Get grid voltage and complex power injection
+    grid_bus = ppc_int['gen'][oGrid.gen_no,0]
+    S_grid = np.complex(results["gen"][oGrid.gen_no, 1] / baseMVA, results["gen"][oGrid.gen_no, 2] / baseMVA)
+    v_grid = v0[grid_bus] 
 
-    # Initialise machine from load flow
     # Get voltage and complex power injection at generator terminals
-    gen_bus = 1 # Bus index for generator (placeholder)
-    S_gen = np.complex(results["gen"][gen_bus, 1] / baseMVA, results["gen"][gen_bus, 2] / baseMVA)
-    v_ang = np.radians(bus[gen_bus, VA])
-    v_gen = v0[1] #bus[gen_bus, VM] * np.complex(np.cos(v_ang), np.sin(v_ang))    
+    gen_bus = ppc_int['gen'][oMach.gen_no,0]
+    S_gen = np.complex(results["gen"][oMach.gen_no, 1] / baseMVA, results["gen"][oMach.gen_no, 2] / baseMVA)
+    v_gen = v0[gen_bus]   
     
     # Initialise machine and grid emf
     oMach.initialise(v_gen,S_gen) 
@@ -154,25 +149,21 @@ if __name__ == '__main__':
         i = 1
         # Iterate until network voltages in successive iterations are within tolerance
         while verr > 0.001 and i <25:        
-            # Update generator current injections
+            # Update generator and grid current injections
             Im = oMach.calc_currents(vt) 
             Ig = oGrid.calc_currents(vg)
             I = np.array([Ig, Im])
-            #print(I)
             
             # Solve for network voltages
             vtmp = Ybus_inv.solve(I) 
-            #print(vtmp)
             verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
-            #print(verr)
             v_prev = vtmp
-            vt = vtmp[1]
-            vg = vtmp[0]
+            vt = vtmp[gen_bus]
+            vg = vtmp[grid_bus]
             i = i + 1
         
-        #y1.append(Ig)
+        # Signal to plot
         y1.append(oMach.signals['Vt'])
-        #y1.append(oCtrl.signals['Vfd'])
         t_axis.append(t*h)
         
         # Write to output file

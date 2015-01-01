@@ -82,7 +82,6 @@ if __name__ == '__main__':
 
     y1 = []
     t_axis = []
-    h = 0.01
     vt = v_gen
     f.write('time,Vref,Vt,Vfd,Id,Iq,Vd,Vq,P,Q,Pm,omega,delta\n')
     print('Simulating...')

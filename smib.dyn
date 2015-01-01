@@ -1,14 +1,22 @@
 # SMIB Test AVR
 # -------------
 
+ID = AVR1
+
+#########################
+# Controller Definition #
+#########################
+
 Vref = REF()
-Vt = INPUT()
+Vt = INPUT(Vt,1)
 N3 = SUM(Vref,-Vt)
 N4 = LDLAG(N3,1,10)
 Vfd = LAG(N4,100,0.1)
 
+##################
+# Initialisation #
+##################
 INIT
-####
 SIGNAL = N4 = MULT(Vfd,0.01)
 SIGNAL = Vref = SUM(Vt,N4)
 STATE = Vfd = MULT(Vfd,0.01)

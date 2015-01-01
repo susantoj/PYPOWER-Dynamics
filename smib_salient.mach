@@ -1,5 +1,8 @@
 # Test machine parameters
 
+ID = GEN1
+GEN_NO = 1
+
 Ra = 0.0
 Xd = 2.29
 Xq = 2.18

@@ -27,6 +27,7 @@ import numpy as np
 
 class controller:
     def __init__(self, filename, iopt):
+        self.id = ''
         self.signals = {}
         self.states = {}
         self.equations = []
@@ -37,30 +38,10 @@ class controller:
     
     def parser(self, filename):
         """
-        Simple dynamic model file parser that returns an ordered list of model equations (as tuples)
-        and a dictionary of signals and state variables initialised to zero.
+        Dynamic model file parser that returns the controller ID, an ordered list of model equations (as tuples),
+        a dictionary of signals and state variables initialised to zero and a list of initialisation
+        equations.
         
-        For example, parsing the code:
-            N1 = INPUT()
-            N2 = LAG (N1, T1) 
-            N3 = INT (N2, K1, T2)
-        
-        returns the list of token tuples:
-            equations = [['N1','INPUT'], ['N2', 'LAG', 'N1', 'T1'], ['N3', 'INT', 'N2', 'K1', 'T2']]
-        
-        and a dictionary of signals and states:
-            signals = {'N1': 0, 'N2' : 0, 'N3' : 0} 
-            states = {'N1': 0, 'N2' : 0, 'N3' : 0} 
-            
-        (Whitespaces are automatically stripped)
-        
-        Inputs: 
-            filename    Name of dynamic model file to open
-        
-        Outputs:
-            equations   List of model equations and parameters
-            signals     Dictionary of signals with initial value = 0
-            states      Dictionary of state variables (with signal output as the key)
         """
         
         f = open(filename, 'r')
@@ -73,18 +54,22 @@ class controller:
                     init_flag = True
                 
                 if init_flag == False:
-                    # Normal equations
-                    equation = [tokens1[0].strip()]
-                    tokens2 = tokens1[1].split('(')
-                    equation.append(tokens2[0].strip())          
-                    tokens3 = tokens2[1].strip(')').split(',')
-                    for token in tokens3:
-                        if token.strip() != '':
-                            equation.append(token.strip())
-                    
-                    self.signals[tokens1[0].strip()] = 0
-                    self.states[tokens1[0].strip()] = 0
-                    self.equations.append(equation)
+                    if tokens1[0].strip() == 'ID':
+                        # Controller ID
+                        self.id = tokens1[1].strip()
+                    else:
+                        # Controller definition equations
+                        equation = [tokens1[0].strip()]
+                        tokens2 = tokens1[1].split('(')
+                        equation.append(tokens2[0].strip())          
+                        tokens3 = tokens2[1].strip(')').split(',')
+                        for token in tokens3:
+                            if token.strip() != '':
+                                equation.append(token.strip())
+                        
+                        self.signals[tokens1[0].strip()] = 0
+                        self.states[tokens1[0].strip()] = 0
+                        self.equations.append(equation)
                 
                 elif tokens1[0].strip() != 'INIT':
                     # Initialisation equations
