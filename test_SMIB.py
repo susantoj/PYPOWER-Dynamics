@@ -91,7 +91,7 @@ if __name__ == '__main__':
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
     
     # Build modified Ybus matrix
-    Ybus = mod_Ybus(Ybus, elements, bus, ppc_int['gen'])
+    Ybus = mod_Ybus(Ybus, elements, bus, ppc_int['gen'], baseMVA)
     
     # Calculate initial voltage phasors
     v0 = results["bus"][:, VM] * (np.cos(np.radians(results["bus"][:, VA])) + 1j * np.sin(np.radians(results["bus"][:, VA])))

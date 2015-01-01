@@ -26,7 +26,7 @@ from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
     VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
 
 
-def mod_Ybus(Ybus, elements, bus, gen):
+def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
     # Add equivalent generator and grid admittances to Ybus matrix
     for element in elements.values():
         Ye = 0
@@ -52,7 +52,7 @@ def mod_Ybus(Ybus, elements, bus, gen):
     # Add equivalent load admittance to Ybus matrix
     Pl, Ql = bus[:, PD], bus[:, QD]
     for i in range(len(Pl)):
-        S_load = np.complex(Pl[i],Ql[i])
+        S_load = np.complex(Pl[i],Ql[i]) / baseMVA
         y_load = S_load / bus[i, VM] ** 2
         Ybus[i,i] = Ybus[i,i] + y_load
     
