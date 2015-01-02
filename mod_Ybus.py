@@ -52,7 +52,7 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
     # Add equivalent load admittance to Ybus matrix
     Pl, Ql = bus[:, PD], bus[:, QD]
     for i in range(len(Pl)):
-        S_load = np.complex(Pl[i],Ql[i]) / baseMVA
+        S_load = np.complex(Pl[i],-Ql[i]) / baseMVA
         y_load = S_load / bus[i, VM] ** 2
         Ybus[i,i] = Ybus[i,i] + y_load
     
