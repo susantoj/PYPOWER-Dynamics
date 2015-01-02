@@ -20,15 +20,18 @@ PYPOWER-Dynamics
 Single Machine Infinite Bus (SMIB) Test
 
 """
-
+# Dynamic model classes
 from controller import controller
 from sym_order6 import sym_order6
 from sym_order4 import sym_order4
 from ext_grid import ext_grid
 
+# Simulation modules
+from events import events
 from recorder import recorder
-
 from run_sim import run_sim
+
+# External modules
 from pypower.loadcase import loadcase
 import matplotlib.pyplot as plt
     
@@ -66,17 +69,17 @@ if __name__ == '__main__':
     elements['grid'] = oGrid
     
     # Create event stack
-    oEvents = None
+    oEvents = events('smib_events.evnt')
     
     # Create recorder object
-    oRecord = recorder('smib_set.rcd')
+    oRecord = recorder('smib_recorder.rcd')
     
     # Run simulation
     oRecord = run_sim(ppc,elements,oEvents,oRecord)
     
     # Plot variables
-    plt.plot(oRecord.t_axis,oRecord.record['GEN1:Vt'])
+    plt.plot(oRecord.t_axis,oRecord.results['GEN1:Vt'])
     plt.show()
     
     # Write recorded variables to output file
-    oRecord.write_output('output.csv')
+    #oRecord.write_output('output.csv')

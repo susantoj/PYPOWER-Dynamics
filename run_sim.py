@@ -164,13 +164,19 @@ def run_sim(ppc, elements, events = None, recorder = None):
         
         if events != None:
             # Check event stack
-            pass
-        
-        # Events (PLACEHOLDER)
-        if t*h == 1:
-            elements['AVR1'].signals['Vref'] = elements['AVR1'].signals['Vref'] + 0.05
-
-        if t*h == 8:
-            elements['AVR1'].signals['Vref'] = elements['AVR1'].signals['Vref'] - 0.05
-    
+            ppc_int, refactorise = events.handle_events(t*h, elements, ppc_int)
+            
+            if refactorise == True:
+                # Rebuild Ybus from new ppc_int
+                baseMVA, bus, branch = ppc_int["baseMVA"], ppc_int["bus"], ppc_int["branch"]
+                Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+                
+                # Rebuild modified Ybus
+                Ybus = mod_Ybus(Ybus, elements, bus, ppc_int['gen'], baseMVA)
+                
+                # Refactorise Ybus
+                Ybus_inv = splu(Ybus)
+                
+                # TO DO: Solve network voltages and re-calculate current injections
+                
     return recorder

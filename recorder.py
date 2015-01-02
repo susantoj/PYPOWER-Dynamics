@@ -24,13 +24,13 @@ Sets up and manages the recording of signals and variables during the simulation
 class recorder:
     def __init__(self, filename):
         self.recordset = []
-        self.record = {}
+        self.results = {}
         self.t_axis = []         
         
         self.parser(filename)
         
         for line in self.recordset:
-            self.record[line[0]] = []   
+            self.results[line[0]] = []   
             
     def parser(self, filename):
         """
@@ -52,7 +52,7 @@ class recorder:
         self.t_axis.append(t)
         
         for line in self.recordset:
-            self.record[line[0]].append(elements[line[1]].signals[line[2]])
+            self.results[line[0]].append(elements[line[1]].signals[line[2]])
     
     def write_output(self, filename=None):
         """
@@ -70,7 +70,7 @@ class recorder:
             for i in range(len(self.t_axis)):
                 newline = str(self.t_axis[i])
                 for line in self.recordset:
-                    newline = newline + ',' + str(self.record[line[0]][i])
+                    newline = newline + ',' + str(self.results[line[0]][i])
                 
                 f.write(newline + '\n')
                 
