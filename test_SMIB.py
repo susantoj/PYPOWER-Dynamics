@@ -22,6 +22,7 @@ Single Machine Infinite Bus (SMIB) Test
 """
 
 from controller import controller
+from interface import init_interfaces
 from sym_order6 import sym_order6
 from sym_order4 import sym_order4
 from ext_grid import ext_grid
@@ -58,6 +59,8 @@ if __name__ == '__main__':
     # Program options
     h = 0.01                # step length (s)
     t_sim = 15              # simulation time (s)
+    max_err = 0.001        # Maximum error in network iteration (voltage mismatches)
+    max_iter = 25           # Maximum number of network iterations
     iopt = 'mod_euler'      # integrator option
     #iopt = 'runge_kutta'
     
@@ -65,7 +68,7 @@ if __name__ == '__main__':
     oCtrl = controller('smib.dyn', iopt)
     #oMach = sym_order4('smib_round.mach', iopt)
     oMach = sym_order6('smib_round.mach', iopt)     
-    oGrid = ext_grid(0.01, 0)
+    oGrid = ext_grid(0.1, 0)
     
     # Create dictionary of elements
     # Hard-coded placeholder (to be replaced by a more generic loop)
@@ -73,6 +76,15 @@ if __name__ == '__main__':
     elements[oCtrl.id] = oCtrl
     elements[oMach.id] = oMach
     elements['grid'] = oGrid
+    
+    # Make list of current injection sources (generators, external grids, etc)
+    sources = []
+    for source in elements.values():
+        if source.__module__ in ['sym_order6', 'sym_order4', 'ext_grid']:
+            sources.append(source)
+    
+    # Set up interfaces
+    interfaces = init_interfaces(elements)
     
     ##################
     # INITIALISATION #
@@ -94,26 +106,25 @@ if __name__ == '__main__':
     Ybus = mod_Ybus(Ybus, elements, bus, ppc_int['gen'], baseMVA)
     
     # Calculate initial voltage phasors
-    v0 = results["bus"][:, VM] * (np.cos(np.radians(results["bus"][:, VA])) + 1j * np.sin(np.radians(results["bus"][:, VA])))
+    v0 = bus[:, VM] * (np.cos(np.radians(bus[:, VA])) + 1j * np.sin(np.radians(bus[:, VA])))
     
-    # Initialise grid and machine from load flow
-    # Get grid voltage and complex power injection
-    grid_bus = ppc_int['gen'][oGrid.gen_no,0]
-    S_grid = np.complex(results["gen"][oGrid.gen_no, 1] / baseMVA, results["gen"][oGrid.gen_no, 2] / baseMVA)
-    v_grid = v0[grid_bus] 
-
-    # Get voltage and complex power injection at generator terminals
-    gen_bus = ppc_int['gen'][oMach.gen_no,0]
-    S_gen = np.complex(results["gen"][oMach.gen_no, 1] / baseMVA, results["gen"][oMach.gen_no, 2] / baseMVA)
-    v_gen = v0[gen_bus]   
+    # Initialise sources from load flow
+    for source in sources:
+        source_bus = ppc_int['gen'][source.gen_no,0]
+        S_source = np.complex(results["gen"][source.gen_no, 1] / baseMVA, results["gen"][source.gen_no, 2] / baseMVA)
+        v_source = v0[source_bus]
+        source.initialise(v_source,S_source)
     
-    # Initialise machine and grid emf
-    oMach.initialise(v_gen,S_gen) 
-    oGrid.initialise(v_grid,S_grid)     
-    
-    # Machine to controller interfacing
-    oCtrl.signals['Vt'] = oMach.signals['Vt']
-    oCtrl.signals['Vfd'] = oMach.signals['Vfd']
+    # Interface controllers and machines (for initialisation)
+    for intf in interfaces:
+        int_type = intf[0]
+        var_name = intf[1]
+        if int_type == 'OUTPUT':
+            # If an output, interface in the reverse direction for initialisation
+            intf[2].signals[var_name] = intf[3].signals[var_name]
+        else:
+            # Inputs are interfaced in normal direction during initialisation
+            intf[3].signals[var_name] = intf[2].signals[var_name]
     
     # Initialise controller
     oCtrl.initialise()
@@ -127,8 +138,6 @@ if __name__ == '__main__':
     
     y1 = []
     t_axis = []
-    vt = v_gen
-    vg = v_grid
     v_prev = v0
     f.write('time,Vref,Vt,Vfd,Id,Iq,Vd,Vq,P,Q,Pm,omega,delta\n')
     print('Simulating...')
@@ -136,9 +145,10 @@ if __name__ == '__main__':
         if np.mod(t,1/h) == 0:
             print('t=' + str(t*h) + 's')
             
-        # Controller and machine interfacing
-        oMach.signals['Vfd'] = oCtrl.signals['Vfd']
-        oCtrl.signals['Vt'] = oMach.signals['Vt']
+        # Interface controllers and machines
+        for intf in interfaces:
+            var_name = intf[1]
+            intf[3].signals[var_name] = intf[2].signals[var_name]
         
         # Solve differential equations
         oCtrl.solve_step(h)
@@ -148,18 +158,17 @@ if __name__ == '__main__':
         verr = 1
         i = 1
         # Iterate until network voltages in successive iterations are within tolerance
-        while verr > 0.001 and i <25:        
-            # Update generator and grid current injections
-            Im = oMach.calc_currents(vt) 
-            Ig = oGrid.calc_currents(vg)
-            I = np.array([Ig, Im])
+        while verr > max_err and i < max_iter:        
+            # Update current injections for sources
+            I = np.zeros(len(bus), dtype='complex')
+            for source in sources:
+                source_bus = ppc_int['gen'][source.gen_no,0]
+                I[source_bus] = source.calc_currents(v_prev[source_bus])
             
             # Solve for network voltages
             vtmp = Ybus_inv.solve(I) 
             verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
             v_prev = vtmp
-            vt = vtmp[gen_bus]
-            vg = vtmp[grid_bus]
             i = i + 1
         
         # Signal to plot
@@ -173,16 +182,14 @@ if __name__ == '__main__':
              + ',' + str(oMach.signals['Q']) + ',' + str(oMach.signals['Pm']) + ',' + str(oMach.states['omega']) \
              + ',' + str(oMach.states['delta']) + '\n')
         
-        # Events
+        # Events (placeholder)
         if t*h == 1:
             oCtrl.signals['Vref'] = oCtrl.signals['Vref'] + 0.05
             #oMach.signals['Pm'] = oMach.signals['Pm'] - 0.05
-            pass
-            
+
         if t*h == 8:
             oCtrl.signals['Vref'] = oCtrl.signals['Vref'] - 0.05
-            pass
-        
+
     plt.plot(t_axis,y1)
     plt.show()
     f.close()

@@ -23,7 +23,6 @@ Anderson, P. M., Fouad, A. A., "Power System Control and Stability", Wiley-IEEE 
 """
 
 import numpy as np
-#import matplotlib.pyplot as plt
 from integrators import integrate
 
 class sym_order6:

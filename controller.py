@@ -152,7 +152,10 @@ class controller:
                 yi = self.neg_token(line[2:])
                 yo = blocks.mult_block(yi)
                 self.signals[signal] = yo
-    
+            
+            elif block == 'OUTPUT':
+                self.signals[signal] = self.signals[line[2]]
+            
     def neg_token(self, tokens):
         """
         Consider negative sign in list of tokens
