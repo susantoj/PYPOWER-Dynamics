@@ -1,0 +1,5 @@
+# Recorder set for SMIB test case
+# Record ID, Object ID, Signal Name
+
+GEN1:Vt , GEN1,  Vt 
+GEN1:Vfd, GEN1,  Vfd
