@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -17,15 +17,18 @@
 
 """
 PYPOWER-Dynamics
-4th Order Synchronous Machine Model
-
+6th Order Synchronous Machine Model
+Based on Anderson-Fouad model
+Anderson, P. M., Fouad, A. A., "Power System Control and Stability", Wiley-IEEE Press, New York, 2002
 """
 
 import numpy as np
-from integrators import integrate
+from pydyn.integrators import integrate
 
-class sym_order4:
+class sym_order6:
     def __init__(self, filename, iopt):
+        self.id = ''
+        self.gen_no = 0
         self.signals = {}
         self.states = {}
         self.params = {}
@@ -57,7 +60,7 @@ class sym_order4:
         """
 
         # Calculate initial armature current
-        Ia0 =  np.conj(S0 / vt0)
+        Ia0 = np.conj(S0 / vt0)
         phi0 = np.angle(Ia0)
         
         # Calculate steady state machine emf (i.e. voltage behind synchronous reactance)
@@ -70,14 +73,14 @@ class sym_order4:
         
         # Calculate machine state variables and Vfd
         Vfd0 = np.abs(Eq0) + (self.params['Xd'] - self.params['Xq']) * Id0
-        
-        # Initial transient EMF
         Eqp0 = Vfd0 - (self.params['Xd'] - self.params['Xdp']) * Id0
-        Edp0 = (self.params['Xq'] - self.params['Xqp']) * Iq0   
+        Eqpp0 = Eqp0 - (self.params['Xdp'] - self.params['Xdpp']) * Id0
         
-        # Initial Vd, Vq
-        Vd0 = Edp0 + self.params['Xqp'] * Iq0
-        Vq0 = Eqp0 - self.params['Xdp'] * Id0
+        Edp0 = (self.params['Xq'] - self.params['Xqp']) * Iq0 
+        Edpp0 = Edp0 + (self.params['Xqp'] - self.params['Xqpp']) * Iq0     
+        
+        Vd0 = Edpp0 + self.params['Xqpp'] * Iq0 - self.params['Ra'] * Id0
+        Vq0 = Eqpp0 - self.params['Xdpp'] * Id0 - self.params['Ra'] * Iq0
         
         # Calculate active and reactive power
         p0 = Vd0 * Id0 + Vq0 * Iq0
@@ -97,36 +100,9 @@ class sym_order4:
         self.states['omega'] = 1
         self.states['delta'] = delta0
         self.states['Eqp'] = Eqp0
+        self.states['Eqpp'] = Eqpp0
         self.states['Edp'] = Edp0
-        
-        self.check_diffs()
-    
-    def check_diffs(self):
-        """
-        Check if differential equations are zero (on initialisation)
-        """
-    
-        # State variables
-        Eqp_0 = self.states['Eqp']
-        Edp_0 = self.states['Edp']
-        
-        Vfd = self.signals['Vfd']
-        Id = self.signals['Id']
-        Iq = self.signals['Iq']
-        
-        Xd = self.params['Xd']
-        Xdp = self.params['Xdp']
-        Td0p = self.params['Td0p']
-        
-        Xq = self.params['Xq']
-        Xqp = self.params['Xqp']
-        Tq0p = self.params['Tq0p']
-        
-        dEqp = (Vfd - (Xd - Xdp) * Id - Eqp_0) / Td0p
-        dEdp = ((Xq - Xqp) * Iq - Edp_0) / Tq0p
-        
-        if dEdp != 0 or dEqp != 0:
-            print('Differential equations not zero on initialisation...')
+        self.states['Edpp'] = Edpp0
     
     def solve_step(self,h):
         """
@@ -138,6 +114,8 @@ class sym_order4:
         delta_0 = self.states['delta']
         Eqp_0 = self.states['Eqp']
         Edp_0 = self.states['Edp']
+        Edpp_0 = self.states['Edpp']
+        Eqpp_0 = self.states['Eqpp']
         
         # Solve electrical differential equations
         p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
@@ -150,10 +128,20 @@ class sym_order4:
         f = '((p[0] - p[1]) * yi - x) / p[2]'
         Edp_1 = integrate(Edp_0,h,f,yi,p,self.opt)
         
+        p = [self.params['Xdp'], self.params['Xdpp'], self.params['Td0pp']]
+        yi = [Eqp_0, self.signals['Id']]
+        f = '(yi[0] - (p[0] - p[1]) * yi[1] - x) / p[2]'
+        Eqpp_1 = integrate(Eqpp_0,h,f,yi,p,self.opt)
+        
+        p = [self.params['Xqp'], self.params['Xqpp'], self.params['Tq0pp']]
+        yi = [Edp_0, self.signals['Iq']]
+        f = '(yi[0] + (p[0] - p[1]) * yi[1] - x) / p[2]'
+        Edpp_1 = integrate(Edpp_0,h,f,yi,p,self.opt)
+        
         # Solve swing equation
         p = self.params['H']
         yi = [self.signals['Pm'], self.signals['P']]
-        f = '1 /( 2 * p) * (yi[0] - yi[1])'
+        f = '1/(2 * p) * (yi[0] - yi[1])'
         omega_1 = integrate(omega_0,h,f,yi,p,self.opt)
         
         p = self.params['H']
@@ -163,7 +151,9 @@ class sym_order4:
         
         # Update state variables
         self.states['Eqp'] = Eqp_1
+        self.states['Eqpp'] = Eqpp_1
         self.states['Edp'] = Edp_1
+        self.states['Edpp'] = Edpp_1
         self.states['omega'] = omega_1
         self.states['delta'] = delta_1
     
@@ -171,24 +161,46 @@ class sym_order4:
         """
         Calculate machine current injections (in network reference frame)
         """
+        
         # Calculate terminal voltage in dq reference frame
         Vd = np.abs(vt) * np.sin(self.states['delta'] - np.angle(vt))
         Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
         
-        # Calculate Id and Iq
-        Id = (self.states['Eqp'] - Vq) / self.params['Xdp']
-        Iq = (Vd - self.states['Edp']) / self.params['Xqp']
+        # For machines with no saliency
+        # Calculate Id and Iq (Norton equivalent current injection in dq frame)
+        if self.params['Ra'] > 0:
+            Iq = (-self.params['Ra'] * (Vq-self.states['Eqpp']) + self.params['Xdpp'] * (Vd - self.states['Edpp'])) / \
+                    (self.params['Xdpp'] * self.params['Xqpp'] + self.params['Ra'] ** 2)
+            Id = -(Vd - self.states['Edpp'] - self.params['Xqpp'] * Iq) / self.params['Ra']
+        else:
+            # Ra = 0 (or if Ra is negative, Ra is ignored)
+            Id = (self.states['Eqpp'] - Vq) / self.params['Xdpp']
+            Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
+        
+        # Formulation for salient pole machines
+        # (only for machines with Ra = 0 at the moment)
+        if self.params['Ra'] == 0:
+            # Unadjusted current injection (in dq frame)
+            Y0 = 0.5 * (self.params['Xdpp'] + self.params['Xqpp']) / (self.params['Xdpp'] * self.params['Xqpp'])
+            Id_u = (self.states['Eqpp'] - Vq) * Y0
+            Iq_u = -(self.states['Edpp'] - Vd) * Y0
+            
+            # Adjusted current injection (in dq frame)
+            Y1 = 0.5 * (self.params['Xdpp'] - self.params['Xqpp']) / (self.params['Xdpp'] * self.params['Xqpp'])
+            Id_a = Y1 * (self.states['Eqpp'] - Vq)
+            Iq_a = Y1 * (self.states['Edpp'] - Vd)
+            
+            # Total current injection
+            Id = Id_u + Id_a
+            Iq = Iq_u + Iq_a
         
         # Calculate power output
-        p = Vd * Id + Vq * Iq        
-        # Equivalent formulation
-        #p = self.states['Eqp'] * Iq + self.states['Edp'] * Id + (self.params['Xdp'] - self.params['Xqp']) * Id * Iq
-        
+        p = Vd * Id + Vq * Iq
         q = Vq * Id - Vd * Iq
-        S = p - 1j * q
+        S = np.complex(p,q)
         
-        # Calculate machine current injection (Norton equivalent current injection in network frame)
-        Im = (self.states['Eqp'] - 1j * self.states['Edp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdp'])
+        # Calculate machine current injection
+        Im = (self.states['Eqpp'] - 1j * self.states['Edpp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdpp'])
         
         # Update signals
         self.signals['Id'] = Id
@@ -197,6 +209,6 @@ class sym_order4:
         self.signals['Vq'] = Vq
         self.signals['P'] = p
         self.signals['Q'] = q
-        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
+        self.signals['Vt'] = np.sqrt(self.signals['Vq'] **2 + self.signals['Vd'] **2)
         
         return Im

@@ -21,15 +21,15 @@ Single Machine Infinite Bus (SMIB) Test
 
 """
 # Dynamic model classes
-from controller import controller
-from sym_order6 import sym_order6
-from sym_order4 import sym_order4
-from ext_grid import ext_grid
+from pydyn.controller import controller
+from pydyn.sym_order6 import sym_order6
+from pydyn.sym_order4 import sym_order4
+from pydyn.ext_grid import ext_grid
 
 # Simulation modules
-from events import events
-from recorder import recorder
-from run_sim import run_sim
+from pydyn.events import events
+from pydyn.recorder import recorder
+from pydyn.run_sim import run_sim
 
 # External modules
 from pypower.loadcase import loadcase

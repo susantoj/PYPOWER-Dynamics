@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -25,7 +25,7 @@ def init_interfaces(elements):
     ints_list = []
     
     for element in elements.values():
-        if element.__module__ == 'controller':
+        if element.__module__ == 'pydyn.controller':
             for line in element.equations:
                 if line[1] == 'INPUT':
                     new_int = [line[1],line[2],elements[line[3]],element]

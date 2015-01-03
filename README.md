@@ -2,9 +2,13 @@ PYPOWER-Dynamics
 ================
 
 Dynamic time-domain simulation module for PYPOWER.
-Note: this is a very preliminary commit. Use at your own risk!
 
 ![screenshot of sample output](/screenshots/open_loop.png?raw=true)
+
+Documentation
+=============
+
+Documentation is located in the [PYPOWER-Dynamics Wiki](https://github.com/susantoj/PYPOWER-Dynamics/wiki).
 
 Dependencies
 ============

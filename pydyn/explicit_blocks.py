@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -22,7 +22,7 @@ Functions for standard blocks (using explicit integrators)
 """
 
 import numpy as np
-from integrators import integrate
+from pydyn.integrators import integrate
 
 # Lag block
 # K / (1 + sT)

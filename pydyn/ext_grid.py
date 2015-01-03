@@ -23,7 +23,7 @@ and two differential equations representing the swing equations.
 """
 
 import numpy as np
-from integrators import integrate
+from pydyn.integrators import integrate
 
 class ext_grid:
     def __init__(self, ID, gen_no, Xdp, H, iopt):

@@ -21,8 +21,8 @@ Time-domain simulation engine
 
 """
 
-from interface import init_interfaces
-from mod_Ybus import mod_Ybus
+from pydyn.interface import init_interfaces
+from pydyn.mod_Ybus import mod_Ybus
 
 from scipy.sparse.linalg import splu
 import numpy as np
@@ -54,17 +54,17 @@ def run_sim(ppc, elements, events = None, recorder = None):
     # Program options
     h = 0.01                # step length (s)
     t_sim = 15              # simulation time (s)
-    max_err = 0.0001         # Maximum error in network iteration (voltage mismatches)
+    max_err = 0.0001        # Maximum error in network iteration (voltage mismatches)
     max_iter = 25           # Maximum number of network iterations
     
     # Make lists of current injection sources (generators, external grids, etc) and controllers
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['sym_order6', 'sym_order4', 'ext_grid']:
+        if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.ext_grid']:
             sources.append(element)
             
-        if element.__module__ == 'controller':
+        if element.__module__ == 'pydyn.controller':
             controllers.append(element)
     
     # Set up interfaces
@@ -138,7 +138,7 @@ def run_sim(ppc, elements, events = None, recorder = None):
         
         # Solve differential equations
         for element in elements.values():
-            if element.__module__ in ['sym_order6', 'sym_order4', 'controller', 'ext_grid']:
+            if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
                 element.solve_step(h) 
         
         # Solve network equations
