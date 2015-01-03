@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -44,7 +44,7 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
         # External grid
         if element.__module__ == 'ext_grid':
             i = gen[element.gen_no,0]
-            Ye = 1 / (1j * element.Xdp)
+            Ye = 1 / (1j * element.params['Xdp'])
         
         if Ye != 0:
             Ybus[i,i] = Ybus[i,i] + Ye

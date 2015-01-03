@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -21,6 +21,10 @@ Events Class
 Sets up and handles events in the simulation
 """
 
+import numpy as np
+from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
+    VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
+
 class events:
     def __init__(self, filename):
         self.event_stack = []
@@ -37,12 +41,15 @@ class events:
                 tokens = line.strip().split(',')
                 
                 # Parse signal events
-                if tokens[1].strip() == 'SIGNAL':
+                if tokens[1].strip() in ['SIGNAL', 'FAULT', 'LOAD']:
                     self.event_stack.append([float(tokens[0].strip()), tokens[1].strip(), tokens[2].strip(), tokens[3].strip(), tokens[4].strip()])
                 
+                elif tokens[1].strip() in ['CLEAR_FAULT', 'TRIP_BRANCH']:
+                    self.event_stack.append([float(tokens[0].strip()), tokens[1].strip(), tokens[2].strip()])
+                    
         f.close()
         
-    def handle_events(self, t, elements, ppc_int):
+    def handle_events(self, t, elements, ppc, baseMVA):
         """
         Checks and handles the event stack during a simulation time step
         """
@@ -65,6 +72,59 @@ class events:
                     elements[obj_id].signals[sig_id] = value
                     
                     print('SIGNAL event at t=' + str(t) + 's on element "' + obj_id + '". ' + sig_id + ' = ' + str(value) + '.')
+                
+                if event_type == 'FAULT':
+                    bus_id = int(self.event_stack[0][2])
+                    Rf = float(self.event_stack[0][3])
+                    Xf = float(self.event_stack[0][4])
+                    
+                    if Rf == 0:
+                        ppc["bus"][bus_id, GS] = 1e10
+                    elif Rf < 0:
+                        ppc["bus"][bus_id, GS] = 0
+                        Rf = 'Inf'
+                    else:
+                        ppc["bus"][bus_id, GS] = 1 / Rf * baseMVA
+                    
+                    if Xf == 0:
+                        ppc["bus"][bus_id, BS] = -1e10
+                    elif Xf < 0:
+                        ppc["bus"][bus_id, BS] = 0
+                        Xf = 'Inf'
+                    else:
+                        ppc["bus"][bus_id, BS] = -1 / Xf * baseMVA
+                    
+                    refactorise = True
+                    
+                    print('FAULT event at t=' + str(t) + 's on bus "' + str(bus_id) + '" with fault impedance Zf = ' + str(Rf) + ' + j' + str(Xf) + ' pu.')
+                
+                if event_type == 'CLEAR_FAULT':
+                    bus_id = int(self.event_stack[0][2])
+                    ppc["bus"][bus_id, BS] = 0
+                    ppc["bus"][bus_id, GS] = 0
+                    refactorise = True
+                    
+                    print('CLEAR_FAULT event at t=' + str(t) + 's on bus "' + str(bus_id) + '".')
+                
+                if event_type == 'TRIP_BRANCH':
+                    branch_id = int(self.event_stack[0][2])
+                    ppc["branch"] = np.delete(ppc["branch"],branch_id, 0)
+                    refactorise = True
+                    
+                    print('TRIP_BRANCH event at t=' + str(t) + 's on branch "' + str(branch_id) + '".')
+                
+                if event_type == 'LOAD':
+                    bus_id = int(self.event_stack[0][2])
+                    Pl = float(self.event_stack[0][3])
+                    Ql = float(self.event_stack[0][4])
+                    
+                    ppc["bus"][bus_id, PD] = Pl
+                    ppc["bus"][bus_id, QD] = Ql
+                    
+                    refactorise = True
+                    
+                    print('LOAD event at t=' + str(t) + 's on bus "' + str(bus_id) + '" with S = ' + str(Pl) + ' MW + j' + str(Ql) + ' MVAr.')
+                    
                 del self.event_stack[0]
                 
-        return ppc_int, refactorise
+        return ppc, refactorise

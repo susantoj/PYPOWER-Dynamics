@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -41,7 +41,7 @@ class recorder:
         for line in f:
             if line[0] != '#' and line.strip() != '':   # Ignore comments and blank lines
                 tokens = line.strip().split(',')
-                self.recordset.append([tokens[0].strip(), tokens[1].strip(), tokens[2].strip()])
+                self.recordset.append([tokens[0].strip(), tokens[1].strip(), tokens[2].strip(), tokens[3].strip()])
                 
         f.close()
     
@@ -52,8 +52,11 @@ class recorder:
         self.t_axis.append(t)
         
         for line in self.recordset:
-            self.results[line[0]].append(elements[line[1]].signals[line[2]])
-    
+            if line[3] == 'SIGNAL':
+                self.results[line[0]].append(elements[line[1]].signals[line[2]])
+            elif line[3] == 'STATE':
+                self.results[line[0]].append(elements[line[1]].states[line[2]])
+            
     def write_output(self, filename=None):
         """
         Write recorded variables to file

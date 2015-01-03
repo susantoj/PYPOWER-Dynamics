@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -54,7 +54,7 @@ def run_sim(ppc, elements, events = None, recorder = None):
     # Program options
     h = 0.01                # step length (s)
     t_sim = 15              # simulation time (s)
-    max_err = 0.001         # Maximum error in network iteration (voltage mismatches)
+    max_err = 0.0001         # Maximum error in network iteration (voltage mismatches)
     max_iter = 25           # Maximum number of network iterations
     
     # Make lists of current injection sources (generators, external grids, etc) and controllers
@@ -138,7 +138,7 @@ def run_sim(ppc, elements, events = None, recorder = None):
         
         # Solve differential equations
         for element in elements.values():
-            if element.__module__ in ['sym_order6', 'sym_order4', 'controller']:
+            if element.__module__ in ['sym_order6', 'sym_order4', 'controller', 'ext_grid']:
                 element.solve_step(h) 
         
         # Solve network equations
@@ -164,10 +164,11 @@ def run_sim(ppc, elements, events = None, recorder = None):
         
         if events != None:
             # Check event stack
-            ppc_int, refactorise = events.handle_events(t*h, elements, ppc_int)
+            ppc, refactorise = events.handle_events(t*h, elements, ppc, baseMVA)
             
             if refactorise == True:
                 # Rebuild Ybus from new ppc_int
+                ppc_int = ext2int(ppc)
                 baseMVA, bus, branch = ppc_int["baseMVA"], ppc_int["bus"], ppc_int["branch"]
                 Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
                 

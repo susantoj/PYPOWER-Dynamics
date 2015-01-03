@@ -1,5 +1,9 @@
 # Event Stack for SMIB test case
 # Event time (s), Event type, Object ID, [Parameters]
 
-3.0, SIGNAL, AVR1, Vref, 1.06
-8.0, SIGNAL, AVR1, Vref, 1.00
+#3.0, SIGNAL, AVR1, Vref, 1.06
+#8.0, SIGNAL, AVR1, Vref, 1.00
+#1.0, FAULT, 1, -1, 0
+#1.25, CLEAR_FAULT, 1
+#1.5, TRIP_BRANCH, 1
+1.0, LOAD, 1, 10, 8

@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -34,6 +34,7 @@ from run_sim import run_sim
 # External modules
 from pypower.loadcase import loadcase
 import matplotlib.pyplot as plt
+import numpy as np
     
 if __name__ == '__main__':
     
@@ -58,15 +59,15 @@ if __name__ == '__main__':
     # Create dynamic model objects
     oCtrl = controller('smib.dyn', iopt)
     #oMach = sym_order4('smib_round.mach', iopt)
-    oMach = sym_order6('smib_round.mach', iopt)     
-    oGrid = ext_grid(0.1, 0)
+    oMach = sym_order6('smib_round.mach', iopt) 
+    oGrid = ext_grid('GRID1', 0, 0.1, 9999, iopt)
     
     # Create dictionary of elements
     # Hard-coded placeholder (to be replaced by a more generic loop)
     elements = {}
     elements[oCtrl.id] = oCtrl
     elements[oMach.id] = oMach
-    elements['grid'] = oGrid
+    elements[oGrid.id] = oGrid
     
     # Create event stack
     oEvents = events('smib_events.evnt')
@@ -78,6 +79,8 @@ if __name__ == '__main__':
     oRecord = run_sim(ppc,elements,oEvents,oRecord)
     
     # Plot variables
+    rel_delta = np.array(oRecord.results['GRID1:delta']) - np.array(oRecord.results['GEN1:delta'])
+    #plt.plot(oRecord.t_axis,rel_delta)
     plt.plot(oRecord.t_axis,oRecord.results['GEN1:Vt'])
     plt.show()
     
