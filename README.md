@@ -1,7 +1,7 @@
 PYPOWER-Dynamics
 ================
 
-Dynamic time-domain simulation module for PYPOWER.
+Time-domain simulation (transient stability) module for PYPOWER.
 
 ![screenshot of sample output](/screenshots/open_loop.png?raw=true)
 
