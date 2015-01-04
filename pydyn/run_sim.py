@@ -33,7 +33,7 @@ from pypower.makeYbus import makeYbus
 from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
     VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
     
-def run_sim(ppc, elements, events = None, recorder = None):
+def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     """
     Run a time-domain simulation
     
@@ -52,11 +52,20 @@ def run_sim(ppc, elements, events = None, recorder = None):
     #########
     
     # Program options
-    h = 0.01                # step length (s)
-    t_sim = 15              # simulation time (s)
-    max_err = 0.0001        # Maximum error in network iteration (voltage mismatches)
-    max_iter = 25           # Maximum number of network iterations
-    
+    if dynopt:
+        h = dynopt['h']             
+        t_sim = dynopt['t_sim']           
+        max_err = dynopt['max_err']        
+        max_iter = dynopt['max_iter']
+        verbose = dynopt['verbose']
+    else:
+        # Default program options
+        h = 0.01                # step length (s)
+        t_sim = 5               # simulation time (s)
+        max_err = 0.0001        # Maximum error in network iteration (voltage mismatches)
+        max_iter = 25           # Maximum number of network iterations
+        verbose = False
+        
     # Make lists of current injection sources (generators, external grids, etc) and controllers
     sources = []
     controllers = []
@@ -157,7 +166,10 @@ def run_sim(ppc, elements, events = None, recorder = None):
             verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
             v_prev = vtmp
             i = i + 1
-            
+        
+        if i >= max_iter and verbose == True:
+            print('Network voltages and current injections did not converge in time step...')
+        
         if recorder != None:
             # Record signals or states
             recorder.record_variables(t*h, elements)
@@ -178,6 +190,19 @@ def run_sim(ppc, elements, events = None, recorder = None):
                 # Refactorise Ybus
                 Ybus_inv = splu(Ybus)
                 
-                # TO DO: Solve network voltages and re-calculate current injections
+                # Iterate until network voltages in successive iterations are within tolerance
+                i = 1
+                while verr > max_err and i < max_iter:        
+                    # Update current injections for sources
+                    I = np.zeros(len(bus), dtype='complex')
+                    for source in sources:
+                        source_bus = ppc_int['gen'][source.gen_no,0]
+                        I[source_bus] = source.calc_currents(v_prev[source_bus])
+                    
+                    # Solve for network voltages
+                    vtmp = Ybus_inv.solve(I) 
+                    verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
+                    v_prev = vtmp
+                    i = i + 1
                 
     return recorder

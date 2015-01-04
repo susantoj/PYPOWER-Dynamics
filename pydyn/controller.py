@@ -40,8 +40,7 @@ class controller:
         """
         Dynamic model file parser that returns the controller ID, an ordered list of model equations (as tuples),
         a dictionary of signals and state variables initialised to zero and a list of initialisation
-        equations.
-        
+        equations.        
         """
         
         f = open(filename, 'r')
@@ -102,6 +101,9 @@ class controller:
                 yi = self.neg_token(line[3:])
                 yo = np.prod(yi)
                 
+            elif block == 'CONST':
+                yo = line[3]
+                
             if type == 'SIGNAL':
                 self.signals[var] = yo
             elif type == 'STATE':
@@ -117,20 +119,29 @@ class controller:
             
             # Current state variable(s)
             x0 = self.states[signal]
-                        
-            if block == 'LAG':
-                yi = self.signals[line[2]]
-                p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.lag_block(h,x0,yi,p,self.opt)
-                self.states[signal] = x1
+            
+            if block == 'CONST':
+                yo = float(line[2])
                 self.signals[signal] = yo
-                
+            
+            elif block == 'GAIN':
+                p = float(line[3])
+                yo = blocks.gain_block(yi,p)
+                self.signals[signal] = yo
+            
             elif block == 'INT':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
                 yo, x1 = blocks.int_block(h,x0,yi,p,self.opt)
                 self.states[signal] = x1
                 self.signals[signal] = yo
+            
+            elif block == 'LAG':
+                yi = self.signals[line[2]]
+                p = [float(x) for x in line[3:]]
+                yo, x1 = blocks.lag_block(h,x0,yi,p,self.opt)
+                self.states[signal] = x1
+                self.signals[signal] = yo    
             
             elif block == 'LDLAG':
                 yi = self.signals[line[2]]
@@ -139,15 +150,12 @@ class controller:
                 self.states[signal] = x1
                 self.signals[signal] = yo
             
-            elif block == 'GAIN':
-                yo = blocks.gain_block(yi,p)
-                self.signals[signal] = yo
-            
-            elif block == 'SUM':
+            elif block == 'LIM':
                 yi = self.neg_token(line[2:])
-                yo = blocks.sum_block(yi)
+                p = [float(x) for x in line[3:]]
+                yo = blocks.lim_block(yi,p)
                 self.signals[signal] = yo
-            
+                
             elif block == 'MULT':
                 yi = self.neg_token(line[2:])
                 yo = blocks.mult_block(yi)
@@ -155,6 +163,18 @@ class controller:
             
             elif block == 'OUTPUT':
                 self.signals[signal] = self.signals[line[2]]
+            
+            elif block == 'SUM':
+                yi = self.neg_token(line[2:])
+                yo = blocks.sum_block(yi)
+                self.signals[signal] = yo
+            
+            elif block == 'WOUT':
+                yi = self.signals[line[2]]
+                p = float(line[3])
+                yo, x1 = blocks.wout_block(h,x0,yi,p,self.opt)
+                self.states[signal] = x1
+                self.signals[signal] = yo
             
     def neg_token(self, tokens):
         """

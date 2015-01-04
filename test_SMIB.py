@@ -45,12 +45,17 @@ if __name__ == '__main__':
     print('----------------------------')
     print('PYPOWER-Dynamics - SMIB Test')
     print('----------------------------')
-    
-    # Open output file
-    #f = open('output.csv', 'w')
-    
+
     # Load PYPOWER case
     ppc = loadcase('smib_case.py')
+    
+    # Program options
+    dynopt = {}
+    dynopt['h'] = 0.01                # step length (s)
+    dynopt['t_sim'] = 10              # simulation time (s)
+    dynopt['max_err'] = 0.0001        # Maximum error in network iteration (voltage mismatches)
+    dynopt['max_iter'] = 25           # Maximum number of network iterations
+    dynopt['verbose'] = False         # option for verbose messages
     
     # Integrator option
     iopt = 'mod_euler'      
@@ -60,7 +65,7 @@ if __name__ == '__main__':
     oCtrl = controller('smib.dyn', iopt)
     #oMach = sym_order4('smib_round.mach', iopt)
     oMach = sym_order6('smib_round.mach', iopt) 
-    oGrid = ext_grid('GRID1', 0, 0.1, 9999, iopt)
+    oGrid = ext_grid('GRID1', 0, 0.1, 99999, iopt)
     
     # Create dictionary of elements
     # Hard-coded placeholder (to be replaced by a more generic loop)
@@ -76,12 +81,16 @@ if __name__ == '__main__':
     oRecord = recorder('smib_recorder.rcd')
     
     # Run simulation
-    oRecord = run_sim(ppc,elements,oEvents,oRecord)
+    oRecord = run_sim(ppc,elements,dynopt,oEvents,oRecord)
+    
+    # Calculate relative rotor angles
+    rel_delta = np.array(oRecord.results['GEN1:delta']) - np.array(oRecord.results['GRID1:delta'])
     
     # Plot variables
-    rel_delta = np.array(oRecord.results['GRID1:delta']) - np.array(oRecord.results['GEN1:delta'])
     #plt.plot(oRecord.t_axis,rel_delta)
     plt.plot(oRecord.t_axis,oRecord.results['GEN1:Vt'])
+    plt.xlabel('Time (s)')
+    plt.ylabel('GEN1:Vt (pu)')
     plt.show()
     
     # Write recorded variables to output file

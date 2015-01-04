@@ -1,6 +1,6 @@
 #!python3
 #
-# Copyright (C) 2014 Julius Susanto
+# Copyright (C) 2014-2015 Julius Susanto
 #
 # PYPOWER-Dynamics is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
@@ -21,10 +21,9 @@ Open Loop Test
 
 """
 
-from controller import controller
-from sym_order6 import sym_order6
-from sym_order4 import sym_order4
-from ext_grid import ext_grid
+from pydyn.controller import controller
+from pydyn.sym_order6 import sym_order6
+from pydyn.sym_order4 import sym_order4
 
 from scipy.sparse.linalg import splu
 import numpy as np
