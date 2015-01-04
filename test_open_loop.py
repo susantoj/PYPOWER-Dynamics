@@ -116,5 +116,7 @@ if __name__ == '__main__':
             oCtrl.signals['Vref'] = oCtrl.signals['Vref'] - 0.05
         
     plt.plot(t_axis,y1)
+    plt.xlabel('Time (s)')
+    plt.ylabel('GEN1:Vt (pu)')
     plt.show()
     f.close()
