@@ -57,7 +57,7 @@ class ext_grid:
         self.signals['P'] = p0
         self.signals['Pm'] = p0
         
-        self.states['Eq'] = Eq0       
+        self.states['Eq'] = np.abs(Eq0)       
         self.states['omega'] = 1
         self.states['delta'] = delta0
         
@@ -97,7 +97,7 @@ class ext_grid:
         self.signals['P'] = p
         self.signals['Vt'] = np.abs(vt)
         
-        i_grid = Eq * np.exp(-1j * np.angle(vt)) / np.complex(0,self.params['Xdp'])
+        i_grid = Eq * np.exp(1j * delta) / np.complex(0,self.params['Xdp'])
         
         return i_grid
     
