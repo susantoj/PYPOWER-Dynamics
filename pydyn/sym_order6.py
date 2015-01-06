@@ -23,7 +23,6 @@ Anderson, P. M., Fouad, A. A., "Power System Control and Stability", Wiley-IEEE 
 """
 
 import numpy as np
-from pydyn.integrators import integrate
 
 class sym_order6:
     def __init__(self, filename, iopt):
@@ -31,6 +30,7 @@ class sym_order6:
         self.gen_no = 0
         self.signals = {}
         self.states = {}
+        self.dsteps = {}
         self.params = {}
         self.opt = iopt
         
@@ -104,12 +104,12 @@ class sym_order6:
         self.states['Edp'] = Edp0
         self.states['Edpp'] = Edpp0
     
-    def solve_step(self,h):
+    def solve_step(self,h,dstep):
         """
-        Solve machine differential equations for the next time step
+        Solve machine differential equations for the next step in modified Euler method iteration
         """
         
-        # State variables
+        # Initial state variables
         omega_0 = self.states['omega']
         delta_0 = self.states['delta']
         Eqp_0 = self.states['Eqp']
@@ -117,46 +117,58 @@ class sym_order6:
         Edpp_0 = self.states['Edpp']
         Eqpp_0 = self.states['Eqpp']
         
-        # Solve electrical differential equations
+        # Electrical differential equations
         p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
         yi = [self.signals['Vfd'], self.signals['Id']]
-        f = '(yi[0] - (p[0] - p[1]) * yi[1] - x) / p[2]'
-        Eqp_1 = integrate(Eqp_0,h,f,yi,p,self.opt)
+        f1 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqp_0) / p[2]
+        Eqp_1 = Eqp_0 + h * f1
         
         p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
         yi = self.signals['Iq']
-        f = '((p[0] - p[1]) * yi - x) / p[2]'
-        Edp_1 = integrate(Edp_0,h,f,yi,p,self.opt)
+        f2 = ((p[0] - p[1]) * yi - Edp_0) / p[2]
+        Edp_1 = Edp_0 + h * f2
         
         p = [self.params['Xdp'], self.params['Xdpp'], self.params['Td0pp']]
         yi = [Eqp_0, self.signals['Id']]
-        f = '(yi[0] - (p[0] - p[1]) * yi[1] - x) / p[2]'
-        Eqpp_1 = integrate(Eqpp_0,h,f,yi,p,self.opt)
+        f3 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqpp_0) / p[2]
+        Eqpp_1 = Eqpp_0 + h * f3
         
         p = [self.params['Xqp'], self.params['Xqpp'], self.params['Tq0pp']]
         yi = [Edp_0, self.signals['Iq']]
-        f = '(yi[0] + (p[0] - p[1]) * yi[1] - x) / p[2]'
-        Edpp_1 = integrate(Edpp_0,h,f,yi,p,self.opt)
+        f4 = (yi[0] + (p[0] - p[1]) * yi[1] - Edpp_0) / p[2]
+        Edpp_1 = Edpp_0 + h * f4
         
-        # Solve swing equation
-        p = self.params['H']
-        yi = [self.signals['Pm'], self.signals['P']]
-        f = '1/(2 * p) * (yi[0] - yi[1])'
-        omega_1 = integrate(omega_0,h,f,yi,p,self.opt)
+        # Swing equation
+        f5 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        omega_1 = omega_0 + h * f5
         
-        p = self.params['H']
-        yi = omega_0
-        f = '314.16 * (yi - 1)'
-        delta_1 = integrate(delta_0,h,f,yi,p,self.opt)
+        f6 = 314.16 * (omega_0 - 1)
+        delta_1 = delta_0 + h *f6
         
         # Update state variables
-        self.states['Eqp'] = Eqp_1
-        self.states['Eqpp'] = Eqpp_1
-        self.states['Edp'] = Edp_1
-        self.states['Edpp'] = Edpp_1
-        self.states['omega'] = omega_1
-        self.states['delta'] = delta_1
-    
+        if dstep == 0:
+            # Predictor step
+            self.states['Eqp'] = Eqp_1
+            self.dsteps['Eqp'] = f1
+            self.states['Edp'] = Edp_1
+            self.dsteps['Edp'] = f2
+            self.states['Eqpp'] = Eqpp_1
+            self.dsteps['Eqpp'] = f3
+            self.states['Edpp'] = Edpp_1
+            self.dsteps['Edpp'] = f4
+            self.states['omega'] = omega_1
+            self.dsteps['omega'] = f5
+            self.states['delta'] = delta_1
+            self.dsteps['delta'] = f6
+        else:
+            # Corrector step
+            self.states['Eqp'] = Eqp_1 - h/2 * self.dsteps['Eqp']
+            self.states['Edp'] = Edp_1 - h/2 * self.dsteps['Edp']
+            self.states['Eqpp'] = Eqpp_1 - h/2 * self.dsteps['Eqpp']
+            self.states['Edpp'] = Edpp_1 - h/2 * self.dsteps['Edpp']
+            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
+            
     def calc_currents(self,vt):
         """
         Calculate machine current injections (in network reference frame)

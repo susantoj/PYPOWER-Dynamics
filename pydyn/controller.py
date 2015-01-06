@@ -30,6 +30,7 @@ class controller:
         self.id = ''
         self.signals = {}
         self.states = {}
+        self.dsteps = {}
         self.equations = []
         self.init = []
         self.opt = iopt
@@ -109,57 +110,51 @@ class controller:
             elif type == 'STATE':
                 self.states[var] = yo
     
-    def solve_step(self,h):
+    def solve_step(self,h,dstep):
         """
         Solve controller for the next time step
         """
+            
         for line in self.equations:
             signal = line[0]
             block = line[1]
-            
+                       
             # Current state variable(s)
             x0 = self.states[signal]
             
+            yo = None
+            x1 = None
+
             if block == 'CONST':
                 yo = float(line[2])
-                self.signals[signal] = yo
             
             elif block == 'GAIN':
                 p = float(line[3])
                 yo = blocks.gain_block(yi,p)
-                self.signals[signal] = yo
             
             elif block == 'INT':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.int_block(h,x0,yi,p,self.opt)
-                self.states[signal] = x1
-                self.signals[signal] = yo
+                yo, x1, f = blocks.int_block(h,x0,yi,p)
             
             elif block == 'LAG':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.lag_block(h,x0,yi,p,self.opt)
-                self.states[signal] = x1
-                self.signals[signal] = yo    
+                yo, x1, f = blocks.lag_block(h,x0,yi,p) 
             
             elif block == 'LDLAG':
                 yi = self.signals[line[2]]
                 p = [float(x) for x in line[3:]]
-                yo, x1 = blocks.leadlag_block(h,x0,yi,p,self.opt)
-                self.states[signal] = x1
-                self.signals[signal] = yo
+                yo, x1, f = blocks.leadlag_block(h,x0,yi,p)
             
             elif block == 'LIM':
                 yi = self.neg_token(line[2:])
                 p = [float(x) for x in line[3:]]
                 yo = blocks.lim_block(yi,p)
-                self.signals[signal] = yo
                 
             elif block == 'MULT':
                 yi = self.neg_token(line[2:])
                 yo = blocks.mult_block(yi)
-                self.signals[signal] = yo
             
             elif block == 'OUTPUT':
                 self.signals[signal] = self.signals[line[2]]
@@ -167,15 +162,22 @@ class controller:
             elif block == 'SUM':
                 yi = self.neg_token(line[2:])
                 yo = blocks.sum_block(yi)
-                self.signals[signal] = yo
             
             elif block == 'WOUT':
                 yi = self.signals[line[2]]
                 p = float(line[3])
-                yo, x1 = blocks.wout_block(h,x0,yi,p,self.opt)
-                self.states[signal] = x1
+                yo, x1, f = blocks.wout_block(h,x0,yi,p)                
+            
+            if yo:
                 self.signals[signal] = yo
             
+            if x1:
+                if dstep == 0:
+                    self.states[signal] = x1
+                    self.dsteps[signal] = f
+                else:
+                    self.states[signal] = x1 - h/2 * self.dsteps[signal]
+                
     def neg_token(self, tokens):
         """
         Consider negative sign in list of tokens

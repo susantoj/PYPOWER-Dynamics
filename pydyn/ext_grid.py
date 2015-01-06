@@ -23,7 +23,6 @@ and two differential equations representing the swing equations.
 """
 
 import numpy as np
-from pydyn.integrators import integrate
 
 class ext_grid:
     def __init__(self, ID, gen_no, Xdp, H, iopt):
@@ -33,6 +32,7 @@ class ext_grid:
         
         self.signals = {}
         self.states = {}
+        self.dsteps = {}
         
         self.params = {}          
         self.params['Xdp'] = Xdp
@@ -61,7 +61,7 @@ class ext_grid:
         self.states['omega'] = 1
         self.states['delta'] = delta0
         
-    def solve_step(self,h):
+    def solve_step(self,h,dstep):
         """
         Solve differential equations for the next time step
         """
@@ -70,20 +70,22 @@ class ext_grid:
         delta_0 = self.states['delta']
         
         # Solve swing equation
-        p = self.params['H']
-        yi = [self.signals['Pm'], self.signals['P']]
-        f = '1/(2 * p) * (yi[0] - yi[1])'
-        omega_1 = integrate(omega_0,h,f,yi,p,self.opt)
+        f1 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        omega_1 = omega_0 + h * f1
         
-        p = self.params['H']
-        yi = omega_0
-        f = '314.16 * (yi - 1)'
-        delta_1 = integrate(delta_0,h,f,yi,p,self.opt)
+        f2 = 314.16 * (omega_0 - 1)
+        delta_1 = delta_0 + h * f2
         
         # Update state variables
-        self.states['omega'] = omega_1
-        self.states['delta'] = delta_1
-    
+        if dstep == 0:
+            self.states['omega'] = omega_1
+            self.dsteps['omega'] = f1
+            self.states['delta'] = delta_1
+            self.dsteps['delta'] = f2
+        else:
+            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
+                    
     def calc_currents(self, vt):
         """
         Solve grid current injections (in network reference frame)

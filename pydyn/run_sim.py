@@ -145,30 +145,22 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
             var_name = intf[1]
             intf[3].signals[var_name] = intf[2].signals[var_name]
         
-        # Solve differential equations
+        # Solve differential equations with modified Euler method
+        # Predictor Step
         for element in elements.values():
-            if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
-                element.solve_step(h) 
+            #if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
+            element.solve_step(h,0) 
         
         # Solve network equations
-        verr = 1
-        i = 1
-        # Iterate until network voltages in successive iterations are within tolerance
-        while verr > max_err and i < max_iter:        
-            # Update current injections for sources
-            I = np.zeros(len(bus), dtype='complex')
-            for source in sources:
-                source_bus = ppc_int['gen'][source.gen_no,0]
-                I[source_bus] = source.calc_currents(v_prev[source_bus])
-            
-            # Solve for network voltages
-            vtmp = Ybus_inv.solve(I) 
-            verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
-            v_prev = vtmp
-            i = i + 1
+        v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
         
-        if i >= max_iter and verbose == True:
-            print('Network voltages and current injections did not converge in time step...')
+        # Corrector Step
+        for element in elements.values():
+            #if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
+            element.solve_step(h/2,1)
+        
+        # Solve network equations
+        v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
         
         if recorder != None:
             # Record signals or states
@@ -191,18 +183,31 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
                 Ybus_inv = splu(Ybus)
                 
                 # Iterate until network voltages in successive iterations are within tolerance
-                i = 1
-                while verr > max_err and i < max_iter:        
-                    # Update current injections for sources
-                    I = np.zeros(len(bus), dtype='complex')
-                    for source in sources:
-                        source_bus = ppc_int['gen'][source.gen_no,0]
-                        I[source_bus] = source.calc_currents(v_prev[source_bus])
-                    
-                    # Solve for network voltages
-                    vtmp = Ybus_inv.solve(I) 
-                    verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
-                    v_prev = vtmp
-                    i = i + 1
+                v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
                 
     return recorder
+    
+def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_iter):
+    """
+    Solve network equations
+    """
+    verr = 1
+    i = 1
+    # Iterate until network voltages in successive iterations are within tolerance
+    while verr > max_err and i < max_iter:        
+        # Update current injections for sources
+        I = np.zeros(no_buses, dtype='complex')
+        for source in sources:
+            source_bus = ppc_int['gen'][source.gen_no,0]
+            I[source_bus] = source.calc_currents(v_prev[source_bus])
+        
+        # Solve for network voltages
+        vtmp = Ybus_inv.solve(I) 
+        verr = np.abs(np.dot((vtmp-v_prev),np.transpose(vtmp-v_prev)))
+        v_prev = vtmp
+        i = i + 1
+    
+    if i >= max_iter and verbose == True:
+        print('Network voltages and current injections did not converge in time step...')
+    
+    return v_prev

@@ -22,12 +22,12 @@ PYPOWER-Dynamics
 """
 
 import numpy as np
-from pydyn.integrators import integrate
 
 class sym_order4:
     def __init__(self, filename, iopt):
         self.signals = {}
         self.states = {}
+        self.dsteps = {}
         self.params = {}
         self.opt = iopt
         
@@ -128,44 +128,52 @@ class sym_order4:
         if dEdp != 0 or dEqp != 0:
             print('Differential equations not zero on initialisation...')
     
-    def solve_step(self,h):
+    def solve_step(self,h,dstep):
         """
         Solve machine differential equations for the next time step
         """
         
-        # State variables
+        # Initial state variables
         omega_0 = self.states['omega']
         delta_0 = self.states['delta']
         Eqp_0 = self.states['Eqp']
         Edp_0 = self.states['Edp']
         
-        # Solve electrical differential equations
+        # Electrical differential equations
         p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
         yi = [self.signals['Vfd'], self.signals['Id']]
-        f = '(yi[0] - (p[0] - p[1]) * yi[1] - x) / p[2]'
-        Eqp_1 = integrate(Eqp_0,h,f,yi,p,self.opt)
+        f1 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqp_0) / p[2]
+        Eqp_1 = Eqp_0 + h * f1
         
         p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
         yi = self.signals['Iq']
-        f = '((p[0] - p[1]) * yi - x) / p[2]'
-        Edp_1 = integrate(Edp_0,h,f,yi,p,self.opt)
+        f2 = ((p[0] - p[1]) * yi - Edp_0) / p[2]
+        Edp_1 = Edp_0 + h * f2
         
-        # Solve swing equation
-        p = self.params['H']
-        yi = [self.signals['Pm'], self.signals['P']]
-        f = '1 /( 2 * p) * (yi[0] - yi[1])'
-        omega_1 = integrate(omega_0,h,f,yi,p,self.opt)
+        # Swing equation
+        f3 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        omega_1 = omega_0 + h * f3
         
-        p = self.params['H']
-        yi = omega_0
-        f = '314.16 * (yi - 1)'
-        delta_1 = integrate(delta_0,h,f,yi,p,self.opt)
+        f4 = 314.16 * (omega_0 - 1)
+        delta_1 = delta_0 + h * f4
         
         # Update state variables
-        self.states['Eqp'] = Eqp_1
-        self.states['Edp'] = Edp_1
-        self.states['omega'] = omega_1
-        self.states['delta'] = delta_1
+        if dstep == 0:
+            # Predictor step
+            self.states['Eqp'] = Eqp_1
+            self.dsteps['Eqp'] = f1
+            self.states['Edp'] = Edp_1
+            self.dsteps['Edp'] = f2
+            self.states['omega'] = omega_1
+            self.dsteps['omega'] = f3
+            self.states['delta'] = delta_1
+            self.dsteps['delta'] = f4
+        else:
+            # Corrector step
+            self.states['Eqp'] = Eqp_1 - h/2 * self.dsteps['Eqp']
+            self.states['Edp'] = Edp_1 - h/2 * self.dsteps['Edp']
+            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
     
     def calc_currents(self,vt):
         """

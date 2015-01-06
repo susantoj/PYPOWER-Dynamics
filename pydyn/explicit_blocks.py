@@ -17,12 +17,11 @@
 
 """
 PYPOWER-Dynamics
-Functions for standard blocks (using explicit integrators)
+Functions for standard blocks (solves a step)
 
 """
 
 import numpy as np
-from pydyn.integrators import integrate
 
 # Gain block    
 # yo = p * yi
@@ -35,32 +34,32 @@ def gain_block(yi,p):
 # Integrator block    
 # K / sT    
 # p = [K, T]
-def int_block(h,x0,yi,p,opt):
-    f = 'yi * p[0] / p[1]'
-    x1 = integrate(x0,h,f,yi,p,opt)
+def int_block(h,x0,yi,p):
+    f = yi * p[0] / p[1]
+    x1 = x0 + h * f
     yo = x1
             
-    return yo, x1
+    return yo, x1, f
 
 # Lag block
 # K / (1 + sT)
 # p = [K, T]
-def lag_block(h,x0,yi,p,opt):   
-    f = '(yi - x) / p[1]'
-    x1 = integrate(x0,h,f,yi,p,opt)
+def lag_block(h,x0,yi,p):   
+    f = (yi - x0) / p[1]
+    x1 = x0 + h * f
     yo = p[0] * x1
             
-    return yo, x1
+    return yo, x1, f
     
 # Lead-Lag block
 # (1 + sTa) / (1 + sTb)
 # p = [Ta, Tb]
-def leadlag_block(h,x0,yi,p,opt):  
-    f = '(yi - x) / p[1]'
-    x1 = integrate(x0,h,f,yi,p,opt)
+def leadlag_block(h,x0,yi,p):  
+    f = (yi - x0) / p[1]
+    x1 = x0 + h * f
     yo = x1 + p[0] * (yi - x0) / p[1]
     
-    return yo, x1
+    return yo, x1, f
 
 # Limiter block    
 # yo = min_lim, if yi < min_lim
@@ -98,10 +97,10 @@ def sum_block(yi):
 # Washout block
 # (s / (1 + sT)
 # p is the time constant T
-def wout_block(h,x0,yi,p,opt):  
-    f = '(yi - x) / p'
-    x1 = integrate(x0,h,f,yi,p,opt)
+def wout_block(h,x0,yi,p):  
+    f = (yi - x0) / p
+    x1 = x0 + h * f
     yo = (yi - x1) / p
     
-    return yo, x1
+    return yo, x1, f
     
