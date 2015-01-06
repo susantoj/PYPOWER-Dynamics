@@ -1,0 +1,17 @@
+# Test machine parameters
+
+ID = GEN1
+GEN_NO = 1
+
+Ra = 0.0
+Xd = 2.29
+Xq = 2.18
+Xdp = 0.2368
+Xqp = 0.3651
+Xdpp = 0.181
+Xqpp = 0.179
+Td0p = 13.1979
+Tq0p = 3.2423
+Td0pp = 0.0394
+Tq0pp = 0.1157
+H = 5.8

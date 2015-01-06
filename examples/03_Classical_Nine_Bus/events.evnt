@@ -1,0 +1,6 @@
+# Event Stack for Classical 9 Bus test case
+# Event time (s), Event type, Object ID, [Parameters]
+
+0.2, FAULT, 7, -1, 0
+0.3, CLEAR_FAULT, 7
+0.3, TRIP_BRANCH, 7

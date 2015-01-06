@@ -46,7 +46,6 @@ if __name__ == '__main__':
     h = 0.01                # step length (s)
     t_sim = 15              # simulation time (s)
     iopt = 'mod_euler'      # integrator option
-    #iopt = 'runge_kutta'
     
     # Create dynamic model objects
     oCtrl = controller('smib.dyn',iopt)
@@ -93,8 +92,8 @@ if __name__ == '__main__':
         oCtrl.signals['Vt'] = oMach.signals['Vt']
         
         # Solve differential equations
-        oCtrl.solve_step(h)
-        oMach.solve_step(h)  
+        oCtrl.solve_step(h, 0)
+        oMach.solve_step(h, 0)  
         oMach.signals['Vt'] = oMach.states['Eqpp']
         
         y1.append(oMach.signals['Vt'])

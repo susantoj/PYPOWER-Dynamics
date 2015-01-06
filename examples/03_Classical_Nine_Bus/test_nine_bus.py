@@ -17,7 +17,7 @@
 
 """
 PYPOWER-Dynamics
-Single Machine Infinite Bus (SMIB) Test
+Classical Stability Test
 
 """
 # Dynamic model classes
@@ -42,17 +42,17 @@ if __name__ == '__main__':
     # SETUP #
     #########
     
-    print('----------------------------')
-    print('PYPOWER-Dynamics - SMIB Test')
-    print('----------------------------')
+    print('----------------------------------------')
+    print('PYPOWER-Dynamics - Classical 9 Bus Test')
+    print('----------------------------------------')
 
     # Load PYPOWER case
-    ppc = loadcase('smib_case.py')
+    ppc = loadcase('case9.py')
     
     # Program options
     dynopt = {}
-    dynopt['h'] = 0.01                # step length (s)
-    dynopt['t_sim'] = 10              # simulation time (s)
+    dynopt['h'] = 0.001               # step length (s)
+    dynopt['t_sim'] = 2               # simulation time (s)
     dynopt['max_err'] = 0.0001        # Maximum error in network iteration (voltage mismatches)
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
@@ -62,35 +62,33 @@ if __name__ == '__main__':
     #iopt = 'runge_kutta'
     
     # Create dynamic model objects
-    oCtrl = controller('smib.dyn', iopt)
-    #oMach = sym_order4('smib_round.mach', iopt)
-    oMach = sym_order6('smib_round.mach', iopt) 
-    oGrid = ext_grid('GRID1', 0, 0.1, 99999, iopt)
+    G1 = ext_grid('GEN1', 0, 0.0608, 9.5515, iopt)
+    G2 = ext_grid('GEN2', 1, 0.1198, 3.33, iopt)
+    G3 = ext_grid('GEN3', 2, 0.1813, 2.35156, iopt)
     
     # Create dictionary of elements
-    # Hard-coded placeholder (to be replaced by a more generic loop)
     elements = {}
-    elements[oCtrl.id] = oCtrl
-    elements[oMach.id] = oMach
-    elements[oGrid.id] = oGrid
+    elements[G1.id] = G1
+    elements[G2.id] = G2
+    elements[G3.id] = G3
     
     # Create event stack
-    oEvents = events('smib_events.evnt')
+    oEvents = events('events.evnt')
     
     # Create recorder object
-    oRecord = recorder('smib_recorder.rcd')
+    oRecord = recorder('recorder.rcd')
     
     # Run simulation
     oRecord = run_sim(ppc,elements,dynopt,oEvents,oRecord)
     
     # Calculate relative rotor angles
-    rel_delta = np.array(oRecord.results['GEN1:delta']) - np.array(oRecord.results['GRID1:delta'])
+    rel_delta1 = np.array(oRecord.results['GEN2:delta']) - np.array(oRecord.results['GEN1:delta'])
+    rel_delta2 = np.array(oRecord.results['GEN3:delta']) - np.array(oRecord.results['GEN1:delta']) 
     
     # Plot variables
-    #plt.plot(oRecord.t_axis,rel_delta)
-    plt.plot(oRecord.t_axis,oRecord.results['GEN1:Vt'])
+    plt.plot(oRecord.t_axis,rel_delta1 *180 / np.pi, 'r-', oRecord.t_axis, rel_delta2 *180 / np.pi, 'b-')
     plt.xlabel('Time (s)')
-    plt.ylabel('GEN1:Vt (pu)')
+    plt.ylabel('Rotor Angles (relative to GEN1)')
     plt.show()
     
     # Write recorded variables to output file
