@@ -176,7 +176,7 @@ class controller:
                     self.states[signal] = x1
                     self.dsteps[signal] = f
                 else:
-                    self.states[signal] = x1 - h/2 * self.dsteps[signal]
+                    self.states[signal] = x1 - h * self.dsteps[signal]
                 
     def neg_token(self, tokens):
         """
