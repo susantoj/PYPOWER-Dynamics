@@ -168,7 +168,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
         
         if events != None:
             # Check event stack
-            ppc, refactorise = events.handle_events(t*h, elements, ppc, baseMVA)
+            ppc, refactorise = events.handle_events(np.round(t*h,5), elements, ppc, baseMVA)
             
             if refactorise == True:
                 # Rebuild Ybus from new ppc_int
@@ -182,7 +182,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
                 # Refactorise Ybus
                 Ybus_inv = splu(Ybus)
                 
-                # Iterate until network voltages in successive iterations are within tolerance
+                # Solve network equations
                 v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
                 
     return recorder
@@ -207,7 +207,9 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         v_prev = vtmp
         i = i + 1
     
-    if i >= max_iter and verbose == True:
+    """
+    if i >= max_iter:
         print('Network voltages and current injections did not converge in time step...')
+    """
     
     return v_prev

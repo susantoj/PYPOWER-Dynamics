@@ -30,6 +30,7 @@ class sym_order4:
         self.dsteps = {}
         self.params = {}
         self.opt = iopt
+        self.omega_n = 2 * np.pi * 50
         
         self.parser(filename)
     
@@ -154,7 +155,7 @@ class sym_order4:
         f3 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
         omega_1 = omega_0 + h * f3
         
-        f4 = 314.16 * (omega_0 - 1)
+        f4 = self.omega_n * (omega_0 - 1)
         delta_1 = delta_0 + h * f4
         
         # Update state variables
@@ -170,10 +171,10 @@ class sym_order4:
             self.dsteps['delta'] = f4
         else:
             # Corrector step
-            self.states['Eqp'] = Eqp_1 - h/2 * self.dsteps['Eqp']
-            self.states['Edp'] = Edp_1 - h/2 * self.dsteps['Edp']
-            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
-            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
+            self.states['Eqp'] = Eqp_1 - h * self.dsteps['Eqp']
+            self.states['Edp'] = Edp_1 - h * self.dsteps['Edp']
+            self.states['omega'] = omega_1 - h * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h * self.dsteps['delta']
     
     def calc_currents(self,vt):
         """

@@ -33,6 +33,7 @@ class sym_order6:
         self.dsteps = {}
         self.params = {}
         self.opt = iopt
+        self.omega_n = 2 * np.pi * 50
         
         self.parser(filename)
     
@@ -142,7 +143,7 @@ class sym_order6:
         f5 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
         omega_1 = omega_0 + h * f5
         
-        f6 = 314.16 * (omega_0 - 1)
+        f6 = self.omega_n * (omega_0 - 1)
         delta_1 = delta_0 + h *f6
         
         # Update state variables
@@ -162,12 +163,12 @@ class sym_order6:
             self.dsteps['delta'] = f6
         else:
             # Corrector step
-            self.states['Eqp'] = Eqp_1 - h/2 * self.dsteps['Eqp']
-            self.states['Edp'] = Edp_1 - h/2 * self.dsteps['Edp']
-            self.states['Eqpp'] = Eqpp_1 - h/2 * self.dsteps['Eqpp']
-            self.states['Edpp'] = Edpp_1 - h/2 * self.dsteps['Edpp']
-            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
-            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
+            self.states['Eqp'] = Eqp_1 - h * self.dsteps['Eqp']
+            self.states['Edp'] = Edp_1 - h * self.dsteps['Edp']
+            self.states['Eqpp'] = Eqpp_1 - h * self.dsteps['Eqpp']
+            self.states['Edpp'] = Edpp_1 - h * self.dsteps['Edpp']
+            self.states['omega'] = omega_1 - h * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h * self.dsteps['delta']
             
     def calc_currents(self,vt):
         """

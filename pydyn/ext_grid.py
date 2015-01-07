@@ -36,7 +36,8 @@ class ext_grid:
         
         self.params = {}          
         self.params['Xdp'] = Xdp
-        self.params['H'] = H        
+        self.params['H'] = H
+        self.params['fn'] = 60
         
     def initialise(self,vt0,S0):
         """
@@ -73,7 +74,7 @@ class ext_grid:
         f1 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
         omega_1 = omega_0 + h * f1
         
-        f2 = 314.16 * (omega_0 - 1)
+        f2 = 2 * np.pi * self.params['fn'] * (omega_0 - 1)
         delta_1 = delta_0 + h * f2
         
         # Update state variables
@@ -83,8 +84,8 @@ class ext_grid:
             self.states['delta'] = delta_1
             self.dsteps['delta'] = f2
         else:
-            self.states['omega'] = omega_1 - h/2 * self.dsteps['omega']
-            self.states['delta'] = delta_1 - h/2 * self.dsteps['delta']
+            self.states['omega'] = omega_1 - h * self.dsteps['omega']
+            self.states['delta'] = delta_1 - h * self.dsteps['delta']
                     
     def calc_currents(self, vt):
         """
@@ -92,6 +93,7 @@ class ext_grid:
         """
         delta = self.states['delta']
         Eq = self.states['Eq']
+        Xdp = self.params['Xdp']
         
         p = 1 / self.params['Xdp'] * np.abs(vt) * np.abs(Eq) * np.sin(delta - np.angle(vt))
         
