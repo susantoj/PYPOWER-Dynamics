@@ -145,22 +145,14 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
             var_name = intf[1]
             intf[3].signals[var_name] = intf[2].signals[var_name]
         
-        # Solve differential equations with modified Euler method
-        # Predictor Step
-        for element in elements.values():
-            #if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
-            element.solve_step(h,0) 
-        
-        # Solve network equations
-        v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
-        
-        # Corrector Step
-        for element in elements.values():
-            #if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.controller', 'pydyn.ext_grid']:
-            element.solve_step(h/2,1)
-        
-        # Solve network equations
-        v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
+        # Solve differential equations
+        for j in range(4):
+            # Solve step of differential equations
+            for element in elements.values():
+                element.solve_step(h,j) 
+            
+            # Interface with network equations
+            v_prev = solve_network(sources, v_prev, Ybus_inv, ppc_int, len(bus), max_err, max_iter)
         
         if recorder != None:
             # Record signals or states
@@ -207,9 +199,7 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         v_prev = vtmp
         i = i + 1
     
-    """
     if i >= max_iter:
         print('Network voltages and current injections did not converge in time step...')
-    """
     
     return v_prev

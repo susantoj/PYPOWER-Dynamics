@@ -30,6 +30,7 @@ class sym_order6:
         self.gen_no = 0
         self.signals = {}
         self.states = {}
+        self.states0 = {}
         self.dsteps = {}
         self.params = {}
         self.opt = iopt
@@ -122,53 +123,113 @@ class sym_order6:
         p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
         yi = [self.signals['Vfd'], self.signals['Id']]
         f1 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqp_0) / p[2]
-        Eqp_1 = Eqp_0 + h * f1
+        k_Eqp = h * f1
         
         p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
         yi = self.signals['Iq']
         f2 = ((p[0] - p[1]) * yi - Edp_0) / p[2]
-        Edp_1 = Edp_0 + h * f2
+        k_Edp = h * f2
         
         p = [self.params['Xdp'], self.params['Xdpp'], self.params['Td0pp']]
         yi = [Eqp_0, self.signals['Id']]
         f3 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqpp_0) / p[2]
-        Eqpp_1 = Eqpp_0 + h * f3
+        k_Eqpp = h * f3
         
         p = [self.params['Xqp'], self.params['Xqpp'], self.params['Tq0pp']]
         yi = [Edp_0, self.signals['Iq']]
         f4 = (yi[0] + (p[0] - p[1]) * yi[1] - Edpp_0) / p[2]
-        Edpp_1 = Edpp_0 + h * f4
+        k_Edpp = h * f4
         
         # Swing equation
         f5 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
-        omega_1 = omega_0 + h * f5
+        k_omega = h * f5
         
         f6 = self.omega_n * (omega_0 - 1)
-        delta_1 = delta_0 + h *f6
+        k_delta = h * f6
         
-        # Update state variables
-        if dstep == 0:
-            # Predictor step
-            self.states['Eqp'] = Eqp_1
-            self.dsteps['Eqp'] = f1
-            self.states['Edp'] = Edp_1
-            self.dsteps['Edp'] = f2
-            self.states['Eqpp'] = Eqpp_1
-            self.dsteps['Eqpp'] = f3
-            self.states['Edpp'] = Edpp_1
-            self.dsteps['Edpp'] = f4
-            self.states['omega'] = omega_1
-            self.dsteps['omega'] = f5
-            self.states['delta'] = delta_1
-            self.dsteps['delta'] = f6
-        else:
-            # Corrector step
-            self.states['Eqp'] = Eqp_1 - h * self.dsteps['Eqp']
-            self.states['Edp'] = Edp_1 - h * self.dsteps['Edp']
-            self.states['Eqpp'] = Eqpp_1 - h * self.dsteps['Eqpp']
-            self.states['Edpp'] = Edpp_1 - h * self.dsteps['Edpp']
-            self.states['omega'] = omega_1 - h * self.dsteps['omega']
-            self.states['delta'] = delta_1 - h * self.dsteps['delta']
+        if self.opt == 'mod_euler':
+            # Modified Euler
+            # Update state variables
+            if dstep == 0:
+                # Predictor step
+                self.states['Eqp'] = Eqp_0 + k_Eqp
+                self.dsteps['Eqp'] = [k_Eqp]
+                self.states['Edp'] = Edp_0 + k_Edp
+                self.dsteps['Edp'] = [k_Edp]
+                self.states['Eqpp'] = Eqpp_0 + k_Eqpp
+                self.dsteps['Eqpp'] = [k_Eqpp]
+                self.states['Edpp'] = Edpp_0 + k_Edpp
+                self.dsteps['Edpp'] = [k_Edpp]
+                self.states['omega'] = omega_0 + k_omega
+                self.dsteps['omega'] = [k_omega]
+                self.states['delta'] = delta_0 + k_delta
+                self.dsteps['delta'] = [k_delta]
+            else:
+                # Corrector step
+                self.states['Eqp'] = Eqp_0 + 0.5 * (k_Eqp - self.dsteps['Eqp'][0])
+                self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])
+                self.states['Eqpp'] = Eqpp_0 + 0.5 * (k_Eqpp - self.dsteps['Eqpp'][0])
+                self.states['Edpp'] = Edpp_0 + 0.5 * (k_Edpp - self.dsteps['Edpp'][0])
+                self.states['omega'] = omega_0 + 0.5 * (k_omega - self.dsteps['omega'][0])     
+                self.states['delta'] = delta_0 + 0.5 * (k_delta - self.dsteps['delta'][0])
+        
+        elif self.opt == 'runge_kutta':
+            # 4th Order Runge-Kutta Method
+            # Update state variables
+            if dstep == 0:
+                # Save initial states
+                self.states0['omega'] = omega_0
+                self.states0['delta'] = delta_0
+                self.states0['Eqp'] = Eqp_0 
+                self.states0['Edp'] = Edp_0
+                self.states0['Eqpp'] = Eqpp_0 
+                self.states0['Edpp'] = Edpp_0
+                
+                self.states['Eqp'] = Eqp_0 + 0.5 * k_Eqp
+                self.dsteps['Eqp'] = [k_Eqp]
+                self.states['Edp'] = Edp_0 + 0.5 * k_Edp
+                self.dsteps['Edp'] = [k_Edp]
+                self.states['Eqpp'] = Eqpp_0 + 0.5 * k_Eqpp
+                self.dsteps['Eqpp'] = [k_Eqpp]
+                self.states['Edpp'] = Edpp_0 + 0.5 * k_Edpp
+                self.dsteps['Edpp'] = [k_Edpp]
+                self.states['omega'] = omega_0 + 0.5 * k_omega
+                self.dsteps['omega'] = [k_omega]            
+                self.states['delta'] = delta_0 + 0.5 * k_delta
+                self.dsteps['delta'] = [k_delta]
+            elif dstep == 1:
+                self.states['Eqp'] = Eqp_0 + 0.5 * k_Eqp
+                self.dsteps['Eqp'].append(k_Eqp)
+                self.states['Edp'] = Edp_0 + 0.5 * k_Edp
+                self.dsteps['Edp'].append(k_Edp)
+                self.states['Eqpp'] = Eqpp_0 + 0.5 * k_Eqpp
+                self.dsteps['Eqpp'].append(k_Eqpp)
+                self.states['Edpp'] = Edpp_0 + 0.5 * k_Edpp
+                self.dsteps['Edpp'].append(k_Edpp)
+                self.states['omega'] = omega_0 + 0.5 * k_omega
+                self.dsteps['omega'].append(k_omega)           
+                self.states['delta'] = delta_0 + 0.5 * k_delta
+                self.dsteps['delta'].append(k_delta)
+            elif dstep == 2:
+                self.states['Eqp'] = Eqp_0 + k_Eqp
+                self.dsteps['Eqp'].append(k_Eqp)
+                self.states['Edp'] = Edp_0 + k_Edp
+                self.dsteps['Edp'].append(k_Edp)
+                self.states['Eqpp'] = Eqpp_0 + k_Eqpp
+                self.dsteps['Eqpp'].append(k_Eqpp)
+                self.states['Edpp'] = Edpp_0 + k_Edpp
+                self.dsteps['Edpp'].append(k_Edpp)
+                self.states['omega'] = omega_0 + k_omega
+                self.dsteps['omega'].append(k_omega)           
+                self.states['delta'] = delta_0 + k_delta
+                self.dsteps['delta'].append(k_delta)
+            elif dstep == 3:
+                self.states['Eqp'] = self.states0['Eqp'] + 1/6 * (self.dsteps['Eqp'][0] + 2*self.dsteps['Eqp'][1] + 2*self.dsteps['Eqp'][2] + k_Eqp)
+                self.states['Edp'] = self.states0['Edp'] + 1/6 * (self.dsteps['Edp'][0] + 2*self.dsteps['Edp'][1] + 2*self.dsteps['Edp'][2] + k_Edp)
+                self.states['Eqpp'] = self.states0['Eqpp'] + 1/6 * (self.dsteps['Eqpp'][0] + 2*self.dsteps['Eqpp'][1] + 2*self.dsteps['Eqpp'][2] + k_Eqpp)
+                self.states['Edpp'] = self.states0['Edpp'] + 1/6 * (self.dsteps['Edpp'][0] + 2*self.dsteps['Edpp'][1] + 2*self.dsteps['Edpp'][2] + k_Edpp)
+                self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
+                self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
             
     def calc_currents(self,vt):
         """

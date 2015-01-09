@@ -30,6 +30,7 @@ class controller:
         self.id = ''
         self.signals = {}
         self.states = {}
+        self.states0 = {}
         self.dsteps = {}
         self.equations = []
         self.init = []
@@ -114,7 +115,10 @@ class controller:
         """
         Solve controller for the next time step
         """
-            
+        if self.opt == 'runge_kutta' and dstep in [0,1]:
+            # Halve the step size for 1st and 2nd steps of 4th order Runge-Kutta method
+            h = h / 2
+                
         for line in self.equations:
             signal = line[0]
             block = line[1]
@@ -172,11 +176,26 @@ class controller:
                 self.signals[signal] = yo
             
             if x1:
-                if dstep == 0:
-                    self.states[signal] = x1
-                    self.dsteps[signal] = f
-                else:
-                    self.states[signal] = x1 - h * self.dsteps[signal]
+                if self.opt == 'mod_euler':
+                    if dstep == 0:
+                        self.states[signal] = x1
+                        self.dsteps[signal] = [f]
+                    elif dstep == 1:
+                        self.states[signal] = x1 - h * self.dsteps[signal][0]
+                        
+                elif self.opt == 'runge_kutta':
+                    if dstep == 0:
+                        self.states0[signal] = x0
+                        self.states[signal] = x1
+                        self.dsteps[signal] = [f * 2 * h]
+                    elif dstep == 1:
+                        self.states[signal] = x1
+                        self.dsteps[signal].append(f * 2 * h)
+                    elif dstep == 2:
+                        self.states[signal] = x1
+                        self.dsteps[signal].append(f * h)
+                    elif dstep == 3:
+                        self.states[signal] = self.states0[signal] + 1/6 * (self.dsteps[signal][0] + 2*self.dsteps[signal][1] + 2*self.dsteps[signal][2] + f * h)
                 
     def neg_token(self, tokens):
         """

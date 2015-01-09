@@ -32,6 +32,7 @@ class ext_grid:
         
         self.signals = {}
         self.states = {}
+        self.states0 = {}
         self.dsteps = {}
         
         self.params = {}          
@@ -72,21 +73,49 @@ class ext_grid:
         
         # Solve swing equation
         f1 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
-        omega_1 = omega_0 + h * f1
+        k_omega = h * f1
         
         f2 = 2 * np.pi * self.params['fn'] * (omega_0 - 1)
-        delta_1 = delta_0 + h * f2
+        k_delta = h * f2
         
-        # Update state variables
-        if dstep == 0:
-            self.states['omega'] = omega_1
-            self.dsteps['omega'] = f1
-            self.states['delta'] = delta_1
-            self.dsteps['delta'] = f2
-        else:
-            self.states['omega'] = omega_1 - h * self.dsteps['omega']
-            self.states['delta'] = delta_1 - h * self.dsteps['delta']
-                    
+        if self.opt == 'mod_euler':
+            # Modified Euler
+            # Update state variables
+            if dstep == 0:
+                self.states['omega'] = omega_0 + k_omega
+                self.dsteps['omega'] = [k_omega]            
+                self.states['delta'] = delta_0 + k_delta
+                self.dsteps['delta'] = [k_delta]
+            elif dstep == 1:
+                self.states['omega'] = omega_0 + 0.5 * (k_omega - self.dsteps['omega'][0])     
+                self.states['delta'] = delta_0 + 0.5 * (k_delta - self.dsteps['delta'][0]) 
+        
+        elif self.opt == 'runge_kutta':
+            # 4th Order Runge-Kutta Method
+            # Update state variables
+            if dstep == 0:
+                # Save initial states
+                self.states0['omega'] = omega_0
+                self.states0['delta'] = delta_0
+                
+                self.states['omega'] = omega_0 + 0.5 * k_omega
+                self.dsteps['omega'] = [k_omega]            
+                self.states['delta'] = delta_0 + 0.5 * k_delta
+                self.dsteps['delta'] = [k_delta]
+            elif dstep == 1:
+                self.states['omega'] = omega_0 + 0.5 * k_omega
+                self.dsteps['omega'].append(k_omega)           
+                self.states['delta'] = delta_0 + 0.5 * k_delta
+                self.dsteps['delta'].append(k_delta)
+            elif dstep == 2:
+                self.states['omega'] = omega_0 + k_omega
+                self.dsteps['omega'].append(k_omega)           
+                self.states['delta'] = delta_0 + k_delta
+                self.dsteps['delta'].append(k_delta)
+            elif dstep == 3:
+                self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
+                self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
+        
     def calc_currents(self, vt):
         """
         Solve grid current injections (in network reference frame)
@@ -95,13 +124,13 @@ class ext_grid:
         Eq = self.states['Eq']
         Xdp = self.params['Xdp']
         
-        p = 1 / self.params['Xdp'] * np.abs(vt) * np.abs(Eq) * np.sin(delta - np.angle(vt))
+        p = np.abs(vt) * Eq * np.sin(delta - np.angle(vt)) / Xdp
         
         # Update signals
         self.signals['P'] = p
         self.signals['Vt'] = np.abs(vt)
         
-        i_grid = Eq * np.exp(1j * delta) / np.complex(0,self.params['Xdp'])
+        i_grid = Eq * np.exp(1j * delta) / np.complex(0,Xdp)
         
         return i_grid
     
