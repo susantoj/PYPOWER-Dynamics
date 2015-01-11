@@ -1,6 +1,9 @@
-# Event Stack for Classical 9 Bus test case
+# Event Stack for SMIB test case
 # Event time (s), Event type, Object ID, [Parameters]
 
-0.2, FAULT, 7, -1, 0
-0.3, CLEAR_FAULT, 7
-0.3, TRIP_BRANCH, 7
+#3.0, SIGNAL, AVR1, Vref, 1.06
+#8.0, SIGNAL, AVR1, Vref, 1.00
+0.0, FAULT, 7, 0, 0
+0.083, TRIP_BRANCH, 7
+0.083, CLEAR_FAULT, 7
+#1.0, LOAD, 1, 10, 8

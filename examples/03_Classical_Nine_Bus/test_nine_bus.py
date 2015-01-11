@@ -52,8 +52,8 @@ if __name__ == '__main__':
     # Program options
     dynopt = {}
     dynopt['h'] = 0.001               # step length (s)
-    dynopt['t_sim'] = 2               # simulation time (s)
-    dynopt['max_err'] = 0.0001        # Maximum error in network iteration (voltage mismatches)
+    dynopt['t_sim'] = 2.0               # simulation time (s)
+    dynopt['max_err'] = 1e-6          # Maximum error in network iteration (voltage mismatches)
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
     
@@ -62,9 +62,9 @@ if __name__ == '__main__':
     #iopt = 'runge_kutta'
     
     # Create dynamic model objects
-    G1 = ext_grid('GEN1', 0, 0.0608, 9.5515, iopt)
-    G2 = ext_grid('GEN2', 1, 0.1198, 3.33, iopt)
-    G3 = ext_grid('GEN3', 2, 0.1813, 2.35156, iopt)
+    G1 = ext_grid('GEN1', 0, 0.0608, 23.64, iopt)
+    G2 = ext_grid('GEN2', 1, 0.1198, 6.01, iopt)
+    G3 = ext_grid('GEN3', 2, 0.1813, 3.01, iopt)
     
     # Create dictionary of elements
     elements = {}
@@ -86,10 +86,11 @@ if __name__ == '__main__':
     rel_delta2 = np.array(oRecord.results['GEN3:delta']) - np.array(oRecord.results['GEN1:delta']) 
     
     # Plot variables
-    plt.plot(oRecord.t_axis,rel_delta1 *180 / np.pi, 'r-', oRecord.t_axis, rel_delta2 *180 / np.pi, 'b-')
+    plt.plot(oRecord.t_axis,rel_delta1 * 180 / np.pi, 'r-', oRecord.t_axis, rel_delta2 *180 / np.pi, 'b-')
+    #plt.plot(oRecord.t_axis, oRecord.results['GEN1:omega'])
     plt.xlabel('Time (s)')
     plt.ylabel('Rotor Angles (relative to GEN1)')
     plt.show()
     
     # Write recorded variables to output file
-    #oRecord.write_output('output.csv')
+    oRecord.write_output('output.csv')
