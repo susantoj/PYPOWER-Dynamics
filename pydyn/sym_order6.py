@@ -37,6 +37,9 @@ class sym_order6:
         self.omega_n = 2 * np.pi * 50
         
         self.parser(filename)
+        
+        # Equivalent Norton impedance for Ybus modification
+        self.Yg = (self.params['Ra'] - 1j * 0.5 * (self.params['Xdpp'] + self.params['Xqpp'])) / (self.params['Ra'] **2 + (self.params['Xdpp'] * self.params['Xqpp']))
     
     def parser(self, filename):
         """
@@ -105,7 +108,48 @@ class sym_order6:
         self.states['Eqpp'] = Eqpp0
         self.states['Edp'] = Edp0
         self.states['Edpp'] = Edpp0
-    
+
+    def calc_currents(self,vt):
+        """
+        Calculate machine current injections (in network reference frame)
+        """
+        
+        # Calculate terminal voltage in dq reference frame
+        Vd = np.abs(vt) * np.sin(self.states['delta'] - np.angle(vt))
+        Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
+        
+        # Calculate Id and Iq (Norton equivalent current injection in dq frame)
+        if self.params['Ra'] > 0:
+            Iq = (-self.params['Ra'] * (Vq-self.states['Eqpp']) + self.params['Xdpp'] * (Vd - self.states['Edpp'])) / \
+                    (self.params['Xdpp'] * self.params['Xqpp'] + self.params['Ra'] ** 2)
+            Id = -(Vd - self.states['Edpp'] - self.params['Xqpp'] * Iq) / self.params['Ra']
+        else:
+            # Ra = 0 (or if Ra is negative, Ra is ignored)
+            Id = (self.states['Eqpp'] - Vq) / self.params['Xdpp']
+            Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
+        
+        # Calculate power output
+        p = Vd * Id + Vq * Iq
+        q = Vq * Id - Vd * Iq
+        S = np.complex(p,q)
+        
+        # Calculate machine current injection (Norton equivalent current injection in network frame)
+        #Im = (self.states['Eqpp'] - 1j * self.states['Edpp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdpp'])
+        delta = self.states['delta']
+        In = (Iq - 1j * Id) * np.exp(1j * (self.states['delta']))
+        Im = In + self.Yg * vt
+        
+        # Update signals
+        self.signals['Id'] = Id
+        self.signals['Iq'] = Iq
+        self.signals['Vd'] = Vd
+        self.signals['Vq'] = Vq
+        self.signals['P'] = p
+        self.signals['Q'] = q
+        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
+        
+        return Im
+        
     def solve_step(self,h,dstep):
         """
         Solve machine differential equations for the next step in modified Euler method iteration
@@ -230,59 +274,3 @@ class sym_order6:
                 self.states['Edpp'] = self.states0['Edpp'] + 1/6 * (self.dsteps['Edpp'][0] + 2*self.dsteps['Edpp'][1] + 2*self.dsteps['Edpp'][2] + k_Edpp)
                 self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
                 self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
-            
-    def calc_currents(self,vt):
-        """
-        Calculate machine current injections (in network reference frame)
-        """
-        
-        # Calculate terminal voltage in dq reference frame
-        Vd = np.abs(vt) * np.sin(self.states['delta'] - np.angle(vt))
-        Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
-        
-        # For machines with no saliency
-        # Calculate Id and Iq (Norton equivalent current injection in dq frame)
-        if self.params['Ra'] > 0:
-            Iq = (-self.params['Ra'] * (Vq-self.states['Eqpp']) + self.params['Xdpp'] * (Vd - self.states['Edpp'])) / \
-                    (self.params['Xdpp'] * self.params['Xqpp'] + self.params['Ra'] ** 2)
-            Id = -(Vd - self.states['Edpp'] - self.params['Xqpp'] * Iq) / self.params['Ra']
-        else:
-            # Ra = 0 (or if Ra is negative, Ra is ignored)
-            Id = (self.states['Eqpp'] - Vq) / self.params['Xdpp']
-            Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
-        
-        # Formulation for salient pole machines
-        # (only for machines with Ra = 0 at the moment)
-        if self.params['Ra'] == 0:
-            # Unadjusted current injection (in dq frame)
-            Y0 = 0.5 * (self.params['Xdpp'] + self.params['Xqpp']) / (self.params['Xdpp'] * self.params['Xqpp'])
-            Id_u = (self.states['Eqpp'] - Vq) * Y0
-            Iq_u = -(self.states['Edpp'] - Vd) * Y0
-            
-            # Adjusted current injection (in dq frame)
-            Y1 = 0.5 * (self.params['Xdpp'] - self.params['Xqpp']) / (self.params['Xdpp'] * self.params['Xqpp'])
-            Id_a = Y1 * (self.states['Eqpp'] - Vq)
-            Iq_a = Y1 * (self.states['Edpp'] - Vd)
-            
-            # Total current injection
-            Id = Id_u + Id_a
-            Iq = Iq_u + Iq_a
-        
-        # Calculate power output
-        p = Vd * Id + Vq * Iq
-        q = Vq * Id - Vd * Iq
-        S = np.complex(p,q)
-        
-        # Calculate machine current injection
-        Im = (self.states['Eqpp'] - 1j * self.states['Edpp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdpp'])
-        
-        # Update signals
-        self.signals['Id'] = Id
-        self.signals['Iq'] = Iq
-        self.signals['Vd'] = Vd
-        self.signals['Vq'] = Vq
-        self.signals['P'] = p
-        self.signals['Q'] = q
-        self.signals['Vt'] = np.sqrt(self.signals['Vq'] **2 + self.signals['Vd'] **2)
-        
-        return Im

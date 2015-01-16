@@ -34,6 +34,9 @@ class sym_order4:
         self.omega_n = 2 * np.pi * 50
         
         self.parser(filename)
+        
+        # Equivalent Norton impedance for Ybus modification
+        self.Yg = (self.params['Ra'] - 1j * 0.5 * (self.params['Xdp'] + self.params['Xqp'])) / (self.params['Ra'] **2 + (self.params['Xdp'] * self.params['Xqp']))
     
     def parser(self, filename):
         """
@@ -70,19 +73,16 @@ class sym_order4:
         Id0 = np.abs(Ia0) * np.sin(delta0 - phi0)
         Iq0 = np.abs(Ia0) * np.cos(delta0 - phi0)
         
+        Vd0 = np.abs(vt0) * np.sin(delta0 - np.angle(vt0))
+        Vq0 = np.abs(vt0) * np.cos(delta0 - np.angle(vt0))
+        
         # Calculate machine state variables and Vfd
-        Vfd0 = np.abs(Eq0) + (self.params['Xd'] - self.params['Xq']) * Id0
-        
-        # Initial transient EMF
-        Eqp0 = Vfd0 - (self.params['Xd'] - self.params['Xdp']) * Id0
-        Edp0 = (self.params['Xq'] - self.params['Xqp']) * Iq0   
-        
-        # Initial Vd, Vq
-        Vd0 = Edp0 + self.params['Xqp'] * Iq0
-        Vq0 = Eqp0 - self.params['Xdp'] * Id0
+        Eqp0 = Vq0 + self.params['Ra'] * Iq0 + self.params['Xdp'] * Id0
+        Edp0 = Vd0 + self.params['Ra'] * Id0 - self.params['Xqp'] * Iq0
+        Vfd0 = np.abs(Eqp0) + (self.params['Xd'] - self.params['Xdp']) * Id0
         
         # Calculate active and reactive power
-        p0 = Vd0 * Id0 + Vq0 * Iq0
+        p0 = (Vd0 + self.params['Ra']*Id0) * Id0 + (Vq0  + self.params['Ra']*Iq0) * Iq0
         q0 = Vq0 * Id0 - Vd0 * Iq0
         
         # Initialise signals, states and parameters        
@@ -102,7 +102,54 @@ class sym_order4:
         self.states['Edp'] = Edp0
         
         self.check_diffs()
-    
+        
+    def calc_currents(self,vt):
+        """
+        Calculate machine current injections (in network reference frame)
+        """
+        # Calculate terminal voltage in dq reference frame
+        Vd = np.abs(vt) * np.sin(self.states['delta'] - np.angle(vt))
+        Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
+        
+        # Calculate Id and Iq (Norton equivalent current injection in dq frame)
+        if self.params['Ra'] > 0:
+            Iq = (-self.params['Ra'] * (Vq-self.states['Eqp']) + self.params['Xdp'] * (Vd - self.states['Edp'])) / \
+                    (self.params['Xdp'] * self.params['Xqp'] + self.params['Ra'] ** 2)
+            Id = -(Vd - self.states['Edp'] - self.params['Xqp'] * Iq) / self.params['Ra']
+        else:
+            # Ra = 0 (or if Ra is negative, Ra is ignored)
+            Id = (self.states['Eqp'] - Vq) / self.params['Xdp']
+            Iq = (Vd - self.states['Edp']) / self.params['Xqp']
+        
+        # Calculate power output
+        #p = Vd * Id + Vq * Iq       
+        p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
+        q = Vq * Id - Vd * Iq
+        
+        # Calculate machine current injection (Norton equivalent current injection in network frame)
+        #Im = (self.states['Eqp'] - 1j * self.states['Edp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xqp'])
+        delta = self.states['delta']
+        In = (Iq - 1j * Id) * np.exp(1j * (self.states['delta']))
+        Im = In + self.Yg * vt
+        
+        """
+        # Equivalent formulation
+        Ir = np.sin(delta) * Id + np.cos(delta) * Iq
+        Ii = -np.cos(delta) * Id + np.sin(delta) * Iq        
+        Im = np.complex(Ir,Ii) + self.Yg * vt
+        """
+        
+        # Update signals
+        self.signals['Id'] = Id
+        self.signals['Iq'] = Iq
+        self.signals['Vd'] = Vd
+        self.signals['Vq'] = Vq
+        self.signals['P'] = p
+        self.signals['Q'] = q
+        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
+        
+        return Im
+        
     def check_diffs(self):
         """
         Check if differential equations are zero (on initialisation)
@@ -127,8 +174,9 @@ class sym_order4:
         dEqp = (Vfd - (Xd - Xdp) * Id - Eqp_0) / Td0p
         dEdp = ((Xq - Xqp) * Iq - Edp_0) / Tq0p
         
-        if dEdp != 0 or dEqp != 0:
-            print('Differential equations not zero on initialisation...')
+        if round(dEdp,6) != 0 or round(dEqp,6) != 0:
+            print('Warning: differential equations not zero on initialisation...')
+            print('dEdp = ' + str(dEdp) + ', dEqp = ' + str(dEqp))
     
     def solve_step(self,h,dstep):
         """
@@ -220,37 +268,4 @@ class sym_order4:
                 self.states['Edp'] = self.states0['Edp'] + 1/6 * (self.dsteps['Edp'][0] + 2*self.dsteps['Edp'][1] + 2*self.dsteps['Edp'][2] + k_Edp)
                 self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
                 self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
-    
-    def calc_currents(self,vt):
-        """
-        Calculate machine current injections (in network reference frame)
-        """
-        # Calculate terminal voltage in dq reference frame
-        Vd = np.abs(vt) * np.sin(self.states['delta'] - np.angle(vt))
-        Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
-        
-        # Calculate Id and Iq
-        Id = (self.states['Eqp'] - Vq) / self.params['Xdp']
-        Iq = (Vd - self.states['Edp']) / self.params['Xqp']
-        
-        # Calculate power output
-        p = Vd * Id + Vq * Iq        
-        # Equivalent formulation
-        #p = self.states['Eqp'] * Iq + self.states['Edp'] * Id + (self.params['Xdp'] - self.params['Xqp']) * Id * Iq
-        
-        q = Vq * Id - Vd * Iq
-        S = p - 1j * q
-        
-        # Calculate machine current injection (Norton equivalent current injection in network frame)
-        Im = (self.states['Eqp'] - 1j * self.states['Edp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdp'])
-        
-        # Update signals
-        self.signals['Id'] = Id
-        self.signals['Iq'] = Iq
-        self.signals['Vd'] = Vd
-        self.signals['Vq'] = Vq
-        self.signals['P'] = p
-        self.signals['Q'] = q
-        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
-        
-        return Im
+   

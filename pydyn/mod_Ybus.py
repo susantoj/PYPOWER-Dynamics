@@ -34,12 +34,12 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
         # 6th order machine
         if element.__module__ == 'pydyn.sym_order6':
             i = gen[element.gen_no,0]
-            Ye = 1 / (element.params['Ra'] + 1j * 0.5 * (element.params['Xdpp'] + element.params['Xqpp']))
+            Ye = element.Yg
         
         # 4th order machine
         if element.__module__ == 'pydyn.sym_order4':
             i = gen[element.gen_no,0]
-            Ye = 1 / (element.params['Ra'] + 1j * 0.5 * (element.params['Xdp'] + element.params['Xqp']))
+            Ye = element.Yg
         
         # External grid
         if element.__module__ == 'pydyn.ext_grid':
