@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # Program options
     dynopt = {}
     dynopt['h'] = 0.01                # step length (s)
-    dynopt['t_sim'] = 12              # simulation time (s)
+    dynopt['t_sim'] = 15              # simulation time (s)
     dynopt['max_err'] = 0.0001        # Maximum error in network iteration (voltage mismatches)
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     
     # Create dynamic model objects
     oCtrl = controller('smib.dyn', dynopt)
-    oMach = sym_order6('smib_salient.mach', dynopt)
+    oMach = sym_order6('smib_round.mach', dynopt)
     #oMach = sym_order4('smib_round.mach', iopt) 
     oGrid = ext_grid('GRID1', 0, 0.1, 99999, dynopt)
     

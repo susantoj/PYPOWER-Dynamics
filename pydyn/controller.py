@@ -104,7 +104,7 @@ class controller:
                 yo = np.prod(yi)
                 
             elif block == 'CONST':
-                yo = line[3]
+                yo = float(line[3])
                 
             if type == 'SIGNAL':
                 self.signals[var] = yo
