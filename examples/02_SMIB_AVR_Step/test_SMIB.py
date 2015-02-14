@@ -56,16 +56,17 @@ if __name__ == '__main__':
     dynopt['max_err'] = 0.0001        # Maximum error in network iteration (voltage mismatches)
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
+    dynopt['fn'] = 50                 # Nominal system frequency (Hz)
     
     # Integrator option
-    iopt = 'mod_euler'      
-    #iopt = 'runge_kutta'
+    #dynopt['iopt'] = 'mod_euler'
+    dynopt['iopt'] = 'runge_kutta'
     
     # Create dynamic model objects
-    oCtrl = controller('smib.dyn', iopt)
-    #oMach = sym_order4('smib_round.mach', iopt)
-    oMach = sym_order6('smib_round.mach', iopt) 
-    oGrid = ext_grid('GRID1', 0, 0.1, 99999, iopt)
+    oCtrl = controller('smib.dyn', dynopt)
+    oMach = sym_order6('smib_salient.mach', dynopt)
+    #oMach = sym_order4('smib_round.mach', iopt) 
+    oGrid = ext_grid('GRID1', 0, 0.1, 99999, dynopt)
     
     # Create dictionary of elements
     # Hard-coded placeholder (to be replaced by a more generic loop)
@@ -94,4 +95,4 @@ if __name__ == '__main__':
     plt.show()
     
     # Write recorded variables to output file
-    #oRecord.write_output('output.csv')
+    oRecord.write_output('output.csv')

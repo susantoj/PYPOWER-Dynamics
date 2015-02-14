@@ -26,7 +26,7 @@ import pydyn.explicit_blocks as blocks
 import numpy as np
 
 class controller:
-    def __init__(self, filename, iopt):
+    def __init__(self, filename, dynopt):
         self.id = ''
         self.signals = {}
         self.states = {}
@@ -34,7 +34,7 @@ class controller:
         self.dsteps = {}
         self.equations = []
         self.init = []
-        self.opt = iopt
+        self.opt = dynopt['iopt']
         
         self.parser(filename)
     

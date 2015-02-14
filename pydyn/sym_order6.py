@@ -25,7 +25,7 @@ Anderson, P. M., Fouad, A. A., "Power System Control and Stability", Wiley-IEEE 
 import numpy as np
 
 class sym_order6:
-    def __init__(self, filename, iopt):
+    def __init__(self, filename, dynopt):
         self.id = ''
         self.gen_no = 0
         self.signals = {}
@@ -33,8 +33,8 @@ class sym_order6:
         self.states0 = {}
         self.dsteps = {}
         self.params = {}
-        self.opt = iopt
-        self.omega_n = 2 * np.pi * 50
+        self.opt = dynopt['iopt']
+        self.omega_n = 2 * np.pi * dynopt['fn']
         
         self.parser(filename)
         
@@ -129,7 +129,7 @@ class sym_order6:
             Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
         
         # Calculate power output
-        p = Vd * Id + Vq * Iq
+        p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq 
         q = Vq * Id - Vd * Iq
         S = np.complex(p,q)
         

@@ -43,14 +43,19 @@ if __name__ == '__main__':
     f = open('output.csv', 'w')
     
     # Program options
+    dynopt = {}
     h = 0.01                # step length (s)
     t_sim = 15              # simulation time (s)
-    iopt = 'mod_euler'      # integrator option
+    dynopt['fn'] = 50       # Nominal system frequency (Hz)
+    
+    # Integrator option
+    #dynopt['iopt'] = 'mod_euler'
+    dynopt['iopt'] = 'runge_kutta'
     
     # Create dynamic model objects
-    oCtrl = controller('smib.dyn',iopt)
-    #oMach = sym_order4('smib_round.mach',iopt)
-    oMach = sym_order6('smib_round.mach',iopt)     
+    oCtrl = controller('smib.dyn',dynopt)
+    #oMach = sym_order4('smib_round.mach',dynopt)
+    oMach = sym_order6('smib_round.mach',dynopt)     
     
     ##################
     # INITIALISATION #
@@ -60,7 +65,7 @@ if __name__ == '__main__':
     
     # Initialise machine
     # Get voltage and complex power injection at generator terminals
-    gen_bus = 1 # Bus index for generator (placeholder)
+    gen_bus = 1 # Bus index for generator
     S_gen = 0
     v_gen = 1    
 

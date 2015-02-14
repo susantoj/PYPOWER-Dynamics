@@ -24,14 +24,14 @@ PYPOWER-Dynamics
 import numpy as np
 
 class sym_order4:
-    def __init__(self, filename, iopt):
+    def __init__(self, filename, dynopt):
         self.signals = {}
         self.states = {}
         self.states0 = {}
         self.dsteps = {}
         self.params = {}
-        self.opt = iopt
-        self.omega_n = 2 * np.pi * 50
+        self.opt = dynopt['iopt']
+        self.omega_n = 2 * np.pi * dynopt['fn']
         
         self.parser(filename)
         

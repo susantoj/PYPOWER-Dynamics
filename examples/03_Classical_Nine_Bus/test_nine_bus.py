@@ -56,15 +56,16 @@ if __name__ == '__main__':
     dynopt['max_err'] = 1e-6          # Maximum error in network iteration (voltage mismatches)
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
+    dynopt['fn'] = 60                 # Nominal system frequency (Hz)
     
     # Integrator option
-    iopt = 'mod_euler'      
-    #iopt = 'runge_kutta'
+    dynopt['iopt'] = 'mod_euler'
+    #dynopt['iopt'] = 'runge_kutta'
     
     # Create dynamic model objects
-    G1 = ext_grid('GEN1', 0, 0.0608, 23.64, iopt)
-    G2 = ext_grid('GEN2', 1, 0.1198, 6.01, iopt)
-    G3 = ext_grid('GEN3', 2, 0.1813, 3.01, iopt)
+    G1 = ext_grid('GEN1', 0, 0.0608, 23.64, dynopt)
+    G2 = ext_grid('GEN2', 1, 0.1198, 6.01, dynopt)
+    G3 = ext_grid('GEN3', 2, 0.1813, 3.01, dynopt)
     
     # Create dictionary of elements
     elements = {}

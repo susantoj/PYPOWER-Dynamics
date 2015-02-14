@@ -25,10 +25,10 @@ and two differential equations representing the swing equations.
 import numpy as np
 
 class ext_grid:
-    def __init__(self, ID, gen_no, Xdp, H, iopt):
+    def __init__(self, ID, gen_no, Xdp, H, dynopt):
         self.id = ID
         self.gen_no = gen_no
-        self.opt = iopt
+        self.opt = dynopt['iopt']
         
         self.signals = {}
         self.states = {}
@@ -38,7 +38,7 @@ class ext_grid:
         self.params = {}          
         self.params['Xdp'] = Xdp
         self.params['H'] = H
-        self.params['fn'] = 60
+        self.params['fn'] = dynopt['fn']
         
     def initialise(self,vt0,S0):
         """
