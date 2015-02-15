@@ -96,7 +96,7 @@ class events:
                     
                     refactorise = True
                     
-                    print('FAULT event at t=' + str(t) + 's on bus "' + str(bus_id) + '" with fault impedance Zf = ' + str(Rf) + ' + j' + str(Xf) + ' pu.')
+                    print('FAULT event at t=' + str(t) + 's on bus at row "' + str(bus_id) + '" with fault impedance Zf = ' + str(Rf) + ' + j' + str(Xf) + ' pu.')
                 
                 if event_type == 'CLEAR_FAULT':
                     bus_id = int(self.event_stack[0][2])
@@ -104,7 +104,7 @@ class events:
                     ppc["bus"][bus_id, GS] = 0
                     refactorise = True
                     
-                    print('CLEAR_FAULT event at t=' + str(t) + 's on bus "' + str(bus_id) + '".')
+                    print('CLEAR_FAULT event at t=' + str(t) + 's on bus at row "' + str(bus_id) + '".')
                 
                 if event_type == 'TRIP_BRANCH':
                     branch_id = int(self.event_stack[0][2])
@@ -123,7 +123,7 @@ class events:
                     
                     refactorise = True
                     
-                    print('LOAD event at t=' + str(t) + 's on bus "' + str(bus_id) + '" with S = ' + str(Pl) + ' MW + j' + str(Ql) + ' MVAr.')
+                    print('LOAD event at t=' + str(t) + 's on bus at row "' + str(bus_id) + '" with S = ' + str(Pl) + ' MW + j' + str(Ql) + ' MVAr.')
                     
                 del self.event_stack[0]
                 
