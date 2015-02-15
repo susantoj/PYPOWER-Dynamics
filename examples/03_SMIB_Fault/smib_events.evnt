@@ -1,0 +1,6 @@
+# Event Stack for SMIB test case
+# Event time (s), Event type, Object ID, [Parameters]
+
+1.0, FAULT, 1, 0, 0
+#1.2, TRIP_BRANCH, 1
+1.2, CLEAR_FAULT, 1

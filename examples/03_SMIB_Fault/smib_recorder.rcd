@@ -1,0 +1,15 @@
+# Recorder set for SMIB test case
+# Record ID, Object ID, Signal Name, Signal/State
+
+GRID1:omega, GRID1,  omega, STATE
+GEN1:Vt, GEN1,  Vt, SIGNAL 
+GEN1:Vfd, GEN1,  Vfd, SIGNAL
+GEN1:Id, GEN1,  Id, SIGNAL
+GEN1:Iq, GEN1,  Iq, SIGNAL
+GEN1:Vd, GEN1,  Vd, SIGNAL
+GEN1:Vq, GEN1,  Vq, SIGNAL
+GEN1:P, GEN1,  P, SIGNAL
+GEN1:Q, GEN1,  Q, SIGNAL
+GRID1:delta, GRID1,  delta, STATE
+GEN1:delta, GEN1,  delta, STATE
+GEN1:omega, GEN1,  omega, STATE
