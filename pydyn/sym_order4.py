@@ -122,8 +122,8 @@ class sym_order4:
             Iq = (Vd - self.states['Edp']) / self.params['Xqp']
         
         # Calculate power output
-        #p = Vd * Id + Vq * Iq       
-        p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
+        p = Vd * Id + Vq * Iq       
+        #p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
         q = Vq * Id - Vd * Iq
         
         # Calculate machine current injection (Norton equivalent current injection in network frame)
@@ -189,19 +189,26 @@ class sym_order4:
         Eqp_0 = self.states['Eqp']
         Edp_0 = self.states['Edp']
         
+        Xd = self.params['Xd']
+        Xdp = self.params['Xdp']
+        Xq = self.params['Xq']
+        Xqp = self.params['Xqp']
+        Td0p = self.params['Td0p']
+        Tq0p = self.params['Tq0p']
+        
+        Vfd = self.signals['Vfd']
+        Id = self.signals['Id']
+        Iq = self.signals['Iq']
+        
         # Electrical differential equations
-        p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
-        yi = [self.signals['Vfd'], self.signals['Id']]
-        f1 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqp_0) / p[2]
+        f1 = (Vfd - (Xd - Xdp) * Id - Eqp_0) / Td0p
         k_Eqp = h * f1
         
-        p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
-        yi = self.signals['Iq']
-        f2 = ((p[0] - p[1]) * yi - Edp_0) / p[2]
+        f2 = ((Xq - Xqp) * Iq - Edp_0) / Tq0p
         k_Edp = h * f2
         
         # Swing equation
-        f3 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        f3 = 1/(2 * self.params['H']) * (self.signals['Pm'] / omega_0 - self.signals['P'])
         k_omega = h * f3
         
         f4 = self.omega_n * (omega_0 - 1)
@@ -226,6 +233,7 @@ class sym_order4:
                 self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])
                 self.states['omega'] = omega_0 + 0.5 * (k_omega - self.dsteps['omega'][0])     
                 self.states['delta'] = delta_0 + 0.5 * (k_delta - self.dsteps['delta'][0])
+                self.signals['Tm'] = self.signals['Pm'] / omega_0
         
         elif self.opt == 'runge_kutta':
             # 4th Order Runge-Kutta Method
@@ -268,4 +276,5 @@ class sym_order4:
                 self.states['Edp'] = self.states0['Edp'] + 1/6 * (self.dsteps['Edp'][0] + 2*self.dsteps['Edp'][1] + 2*self.dsteps['Edp'][2] + k_Edp)
                 self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
                 self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
+                self.signals['Tm'] = self.signals['Pm'] / omega_0
    

@@ -101,6 +101,7 @@ class sym_order6:
         self.signals['P'] = p0
         self.signals['Q'] = q0
         self.signals['Pm'] = p0
+        self.signals['Tm'] = p0
         
         self.states['omega'] = 1
         self.states['delta'] = delta0
@@ -129,7 +130,7 @@ class sym_order6:
             Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
         
         # Calculate power output
-        p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq 
+        p = Vd * Id + Vq * Iq 
         q = Vq * Id - Vd * Iq
         S = np.complex(p,q)
         
@@ -146,7 +147,7 @@ class sym_order6:
         self.signals['Vq'] = Vq
         self.signals['P'] = p
         self.signals['Q'] = q
-        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
+        self.signals['Vt'] = np.abs(vt)
         
         return Im
         
@@ -163,29 +164,36 @@ class sym_order6:
         Edpp_0 = self.states['Edpp']
         Eqpp_0 = self.states['Eqpp']
         
+        Xd = self.params['Xd']
+        Xdp = self.params['Xdp']
+        Xdpp = self.params['Xdpp']
+        Xq = self.params['Xq']
+        Xqp = self.params['Xqp']
+        Xqpp = self.params['Xqpp']
+        Td0p = self.params['Td0p']
+        Td0pp = self.params['Td0pp']
+        Tq0p = self.params['Tq0p']
+        Tq0pp = self.params['Tq0pp']
+        
+        Vfd = self.signals['Vfd']
+        Id = self.signals['Id']
+        Iq = self.signals['Iq']
+        
         # Electrical differential equations
-        p = [self.params['Xd'], self.params['Xdp'], self.params['Td0p']]
-        yi = [self.signals['Vfd'], self.signals['Id']]
-        f1 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqp_0) / p[2]
+        f1 = (Vfd - (Xd - Xdp) * Id - Eqp_0) / Td0p
         k_Eqp = h * f1
         
-        p = [self.params['Xq'], self.params['Xqp'], self.params['Tq0p']]
-        yi = self.signals['Iq']
-        f2 = ((p[0] - p[1]) * yi - Edp_0) / p[2]
+        f2 = ((Xq - Xqp) * Iq - Edp_0) / Tq0p
         k_Edp = h * f2
         
-        p = [self.params['Xdp'], self.params['Xdpp'], self.params['Td0pp']]
-        yi = [Eqp_0, self.signals['Id']]
-        f3 = (yi[0] - (p[0] - p[1]) * yi[1] - Eqpp_0) / p[2]
+        f3 = (Eqp_0 - (Xdp - Xdpp) * Id - Eqpp_0) / Td0pp
         k_Eqpp = h * f3
         
-        p = [self.params['Xqp'], self.params['Xqpp'], self.params['Tq0pp']]
-        yi = [Edp_0, self.signals['Iq']]
-        f4 = (yi[0] + (p[0] - p[1]) * yi[1] - Edpp_0) / p[2]
+        f4 = (Edp_0 + (Xqp - Xqpp) * Iq - Edpp_0) / Tq0pp
         k_Edpp = h * f4
         
         # Swing equation
-        f5 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        f5 = 0.5 / self.params['H'] * (self.signals['Pm'] / omega_0 - self.signals['P'])
         k_omega = h * f5
         
         f6 = self.omega_n * (omega_0 - 1)
@@ -216,7 +224,8 @@ class sym_order6:
                 self.states['Edpp'] = Edpp_0 + 0.5 * (k_Edpp - self.dsteps['Edpp'][0])
                 self.states['omega'] = omega_0 + 0.5 * (k_omega - self.dsteps['omega'][0])     
                 self.states['delta'] = delta_0 + 0.5 * (k_delta - self.dsteps['delta'][0])
-        
+                self.signals['Tm'] = self.signals['Pm'] / omega_0
+                
         elif self.opt == 'runge_kutta':
             # 4th Order Runge-Kutta Method
             # Update state variables
@@ -274,3 +283,4 @@ class sym_order6:
                 self.states['Edpp'] = self.states0['Edpp'] + 1/6 * (self.dsteps['Edpp'][0] + 2*self.dsteps['Edpp'][1] + 2*self.dsteps['Edpp'][2] + k_Edpp)
                 self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
                 self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
+                self.signals['Tm'] = self.signals['Pm'] / omega_0
