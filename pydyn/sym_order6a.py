@@ -122,12 +122,13 @@ class sym_order6a:
         # Calculate Id and Iq (Norton equivalent current injection in dq frame)
         Eqpp = self.states['Eqpp']
         Edpp = self.states['Edpp']
+        omega = self.states['omega']
         Ra = self.params['Ra']
         Xdpp = self.params['Xdpp']
         Xqpp = self.params['Xqpp']
         
-        Id = (Eqpp - Ra / Xqpp * (Vd - Edpp) - Vq) / (Xdpp + Ra ** 2 / Xqpp)
-        Iq = (Vd + Ra * Id - Edpp) / Xqpp
+        Id = (Eqpp - Ra / (Xqpp * omega) * (Vd - Edpp) - Vq / omega) / (Xdpp + Ra ** 2 / (omega * omega * Xqpp))
+        Iq = (Vd / omega + Ra * Id / omega - Edpp) / Xqpp
 
         # Calculate power output
         p = Vd * Id + Vq * Iq 

@@ -114,6 +114,7 @@ class sym_order4:
         # Calculate Id and Iq (Norton equivalent current injection in dq frame)
         Eqp = self.states['Eqp']
         Edp = self.states['Edp']
+        omega = self.states['omega']
         Ra = self.params['Ra']
         Xdp = self.params['Xdp']
         Xqp = self.params['Xqp']
@@ -121,16 +122,9 @@ class sym_order4:
         Id = (Eqp - Ra / Xqp * (Vd - Edp) - Vq) / (Xdp + Ra ** 2 / Xqp)
         Iq = (Vd + Ra * Id - Edp) / Xqp
         
-        """
-        if self.params['Ra'] > 0:
-            Iq = (-self.params['Ra'] * (Vq-self.states['Eqp']) + self.params['Xdp'] * (Vd - self.states['Edp'])) / \
-                    (self.params['Xdp'] * self.params['Xqp'] + self.params['Ra'] ** 2)
-            Id = -(Vd - self.states['Edp'] - self.params['Xqp'] * Iq) / self.params['Ra']
-        else:
-            # Ra = 0 (or if Ra is negative, Ra is ignored)
-            Id = (self.states['Eqp'] - Vq) / self.params['Xdp']
-            Iq = (Vd - self.states['Edp']) / self.params['Xqp']
-        """
+        Id = (Eqp - Ra / (Xqp * omega) * (Vd - Edp) - Vq / omega) / (Xdp + Ra ** 2 / (omega * omega * Xqp))
+        Iq = (Vd / omega + Ra * Id / omega - Edp) / Xqp
+        
         # Calculate power output
         p = Vd * Id + Vq * Iq       
         #p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
@@ -156,7 +150,8 @@ class sym_order4:
         self.signals['Vq'] = Vq
         self.signals['P'] = p
         self.signals['Q'] = q
-        self.signals['Vt'] = np.sqrt(Vd**2 + Vq**2)
+        self.signals['Vt'] = np.abs(vt)
+        self.signals['Vang'] = np.angle(vt)
         
         return Im
         
