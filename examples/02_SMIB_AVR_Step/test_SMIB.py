@@ -22,7 +22,7 @@ Single Machine Infinite Bus (SMIB) Test
 """
 # Dynamic model classes
 from pydyn.controller import controller
-from pydyn.sym_order6 import sym_order6
+from pydyn.sym_order6a import sym_order6a
 from pydyn.sym_order4 import sym_order4
 from pydyn.ext_grid import ext_grid
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     
     # Create dynamic model objects
     oCtrl = controller('smib.dyn', dynopt)
-    oMach = sym_order6('smib_round.mach', dynopt)
+    oMach = sym_order6a('smib_round.mach', dynopt)
     #oMach = sym_order4('smib_round.mach', iopt) 
     oGrid = ext_grid('GRID1', 0, 0.1, 99999, dynopt)
     

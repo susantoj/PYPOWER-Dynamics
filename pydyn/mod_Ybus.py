@@ -31,13 +31,8 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
     for element in elements.values():
         Ye = 0
         
-        # 6th order machine
-        if element.__module__ == 'pydyn.sym_order6':
-            i = gen[element.gen_no,0]
-            Ye = element.Yg
-        
-        # 4th order machine
-        if element.__module__ == 'pydyn.sym_order4':
+        # 4th/6th order machines
+        if element.__module__ in ['pydyn.sym_order4', 'pydyn.sym_order6a', 'pydyn.sym_order6b']:
             i = gen[element.gen_no,0]
             Ye = element.Yg
         
@@ -49,11 +44,11 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
         if Ye != 0:
             Ybus[i,i] = Ybus[i,i] + Ye
 
-    # Add equivalent load admittance to Ybus matrix
+    # Add equivalent load admittance to Ybus matrix    
     Pl, Ql = bus[:, PD], bus[:, QD]
     for i in range(len(Pl)):
-        S_load = np.complex(Pl[i],-Ql[i]) / baseMVA
-        y_load = S_load / bus[i, VM] ** 2
+        S_load = (Pl[i] - 1j * Ql[i]) / baseMVA
+        y_load = S_load / (bus[i, VM] ** 2)
         Ybus[i,i] = Ybus[i,i] + y_load
     
     return Ybus

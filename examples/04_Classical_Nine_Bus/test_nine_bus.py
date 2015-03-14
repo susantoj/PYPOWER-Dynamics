@@ -21,9 +21,6 @@ Classical Stability Test
 
 """
 # Dynamic model classes
-from pydyn.controller import controller
-from pydyn.sym_order6 import sym_order6
-from pydyn.sym_order4 import sym_order4
 from pydyn.ext_grid import ext_grid
 
 # Simulation modules

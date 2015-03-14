@@ -70,7 +70,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['pydyn.sym_order6', 'pydyn.sym_order4', 'pydyn.ext_grid']:
+        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid']:
             sources.append(element)
             
         if element.__module__ == 'pydyn.controller':
