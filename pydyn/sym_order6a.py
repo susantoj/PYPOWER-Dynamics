@@ -120,15 +120,15 @@ class sym_order6a:
         Vq = np.abs(vt) * np.cos(self.states['delta'] - np.angle(vt))
         
         # Calculate Id and Iq (Norton equivalent current injection in dq frame)
-        if self.params['Ra'] > 0:
-            Iq = (-self.params['Ra'] * (Vq-self.states['Eqpp']) + self.params['Xdpp'] * (Vd - self.states['Edpp'])) / \
-                    (self.params['Xdpp'] * self.params['Xqpp'] + self.params['Ra'] ** 2)
-            Id = -(Vd - self.states['Edpp'] - self.params['Xqpp'] * Iq) / self.params['Ra']
-        else:
-            # Ra = 0 (or if Ra is negative, Ra is ignored)
-            Id = (self.states['Eqpp'] - Vq) / self.params['Xdpp']
-            Iq = (Vd - self.states['Edpp']) / self.params['Xqpp']
+        Eqpp = self.states['Eqpp']
+        Edpp = self.states['Edpp']
+        Ra = self.params['Ra']
+        Xdpp = self.params['Xdpp']
+        Xqpp = self.params['Xqpp']
         
+        Id = (Eqpp - Ra / Xqpp * (Vd - Edpp) - Vq) / (Xdpp + Ra ** 2 / Xqpp)
+        Iq = (Vd + Ra * Id - Edpp) / Xqpp
+
         # Calculate power output
         p = Vd * Id + Vq * Iq 
         p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq
