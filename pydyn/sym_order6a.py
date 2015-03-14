@@ -131,13 +131,11 @@ class sym_order6a:
         Iq = (Vd / omega + Ra * Id / omega - Edpp) / Xqpp
 
         # Calculate power output
-        p = Vd * Id + Vq * Iq 
         p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq
         q = Vq * Id - Vd * Iq
         S = np.complex(p,q)
         
         # Calculate machine current injection (Norton equivalent current injection in network frame)
-        #Im = (self.states['Eqpp'] - 1j * self.states['Edpp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xdpp'])
         delta = self.states['delta']
         In = (Iq - 1j * Id) * np.exp(1j * (self.states['delta']))
         Im = In + self.Yg * vt

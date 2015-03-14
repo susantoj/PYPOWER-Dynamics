@@ -125,23 +125,14 @@ class sym_order4:
         Id = (Eqp - Ra / (Xqp * omega) * (Vd - Edp) - Vq / omega) / (Xdp + Ra ** 2 / (omega * omega * Xqp))
         Iq = (Vd / omega + Ra * Id / omega - Edp) / Xqp
         
-        # Calculate power output
-        p = Vd * Id + Vq * Iq       
-        #p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
+        # Calculate power output    
+        p = (Vd + self.params['Ra']*Id) * Id + (Vq  + self.params['Ra']*Iq) * Iq             
         q = Vq * Id - Vd * Iq
         
         # Calculate machine current injection (Norton equivalent current injection in network frame)
-        #Im = (self.states['Eqp'] - 1j * self.states['Edp']) * np.exp(1j * (self.states['delta'])) / (1j * self.params['Xqp'])
         delta = self.states['delta']
         In = (Iq - 1j * Id) * np.exp(1j * (self.states['delta']))
         Im = In + self.Yg * vt
-        
-        """
-        # Equivalent formulation
-        Ir = np.sin(delta) * Id + np.cos(delta) * Iq
-        Ii = -np.cos(delta) * Id + np.sin(delta) * Iq        
-        Im = np.complex(Ir,Ii) + self.Yg * vt
-        """
         
         # Update signals
         self.signals['Id'] = Id
