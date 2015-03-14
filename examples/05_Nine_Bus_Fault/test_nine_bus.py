@@ -1,0 +1,98 @@
+#!python3
+#
+# Copyright (C) 2014-2015 Julius Susanto
+#
+# PYPOWER-Dynamics is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version.
+#
+# PYPOWER-Dynamics is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PYPOWER-Dynamics. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+PYPOWER-Dynamics
+Nine-Bus Network Stability Test
+
+"""
+# Dynamic model classes
+from pydyn.controller import controller
+from pydyn.sym_order6a import sym_order6a
+from pydyn.sym_order6b import sym_order6b
+from pydyn.sym_order4 import sym_order4
+from pydyn.ext_grid import ext_grid
+
+# Simulation modules
+from pydyn.events import events
+from pydyn.recorder import recorder
+from pydyn.run_sim import run_sim
+
+# External modules
+from pypower.loadcase import loadcase
+import matplotlib.pyplot as plt
+import numpy as np
+    
+if __name__ == '__main__':
+    
+    #########
+    # SETUP #
+    #########
+    
+    print('---------------------------------------')
+    print('PYPOWER-Dynamics - 9 Bus Stability Test')
+    print('---------------------------------------')
+
+    # Load PYPOWER case
+    ppc = loadcase('case9.py')
+    
+    # Program options
+    dynopt = {}
+    dynopt['h'] = 0.01                # step length (s)
+    dynopt['t_sim'] = 5.0             # simulation time (s)
+    dynopt['max_err'] = 1e-6          # Maximum error in network iteration (voltage mismatches)
+    dynopt['max_iter'] = 25           # Maximum number of network iterations
+    dynopt['verbose'] = False         # option for verbose messages
+    dynopt['fn'] = 60                 # Nominal system frequency (Hz)
+    
+    # Integrator option
+    #dynopt['iopt'] = 'mod_euler'
+    dynopt['iopt'] = 'runge_kutta'
+          
+    # Create dynamic model objects
+    G1 = sym_order6b('G1.mach', dynopt)
+    G2 = sym_order6b('G2.mach', dynopt)
+    G3 = sym_order6b('G3.mach', dynopt)
+    
+    # Create dictionary of elements
+    elements = {}
+    elements[G1.id] = G1
+    elements[G2.id] = G2
+    elements[G3.id] = G3
+    #elements[oCtrl.id] = oCtrl
+    
+    # Create event stack
+    oEvents = events('events.evnt')
+    
+    # Create recorder object
+    oRecord = recorder('recorder.rcd')
+    
+    # Run simulation
+    oRecord = run_sim(ppc,elements,dynopt,oEvents,oRecord)
+    
+    # Calculate relative rotor angles
+    rel_delta1 = np.array(oRecord.results['GEN2:delta']) - np.array(oRecord.results['GEN1:delta'])
+    rel_delta2 = np.array(oRecord.results['GEN3:delta']) - np.array(oRecord.results['GEN1:delta']) 
+    
+    # Plot variables
+    plt.plot(oRecord.t_axis,rel_delta1 * 180 / np.pi, 'r-', oRecord.t_axis, rel_delta2 *180 / np.pi, 'b-')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Rotor Angles (relative to GEN1)')
+    plt.show()
+    
+    # Write recorded variables to output file
+    oRecord.write_output('output.csv')
