@@ -58,6 +58,7 @@ if __name__ == '__main__':
     dynopt['max_iter'] = 25           # Maximum number of network iterations
     dynopt['verbose'] = False         # option for verbose messages
     dynopt['fn'] = 60                 # Nominal system frequency (Hz)
+    dynopt['speed_volt'] = True       # Speed-voltage term option (for current injection calculation)
     
     # Integrator option
     #dynopt['iopt'] = 'mod_euler'

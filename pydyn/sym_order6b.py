@@ -36,6 +36,12 @@ class sym_order6b:
         self.opt = dynopt['iopt']
         self.omega_n = 2 * np.pi * dynopt['fn']
         
+        # Check for speed-voltage term option 
+        if 'speed_volt' in dynopt:
+            self.speed_volt = dynopt['speed_volt']
+        else:
+            self.speed_volt = False
+        
         self.parser(filename)
         
         # Internal variables
@@ -184,7 +190,6 @@ class sym_order6b:
         Edp = self.states['Edp']
         phid_pp = self.states['phid_pp']
         phiq_pp = self.states['phiq_pp']
-        omega = self.states['omega']
         
         Ra = self.params['Ra']
         Xa = self.params['Xa']
@@ -194,6 +199,12 @@ class sym_order6b:
         Xqpp = self.params['Xqpp']     
         gamma_d1 = self.params['gamma_d1']
         gamma_q1 = self.params['gamma_q1']
+        
+        # Check if speed-voltage term should be included
+        if self.speed_volt:
+            omega = self.states['omega']
+        else:
+            omega = 1
         
         Id = (-Vq / omega + gamma_d1 * Eqp + (1 - gamma_d1) * phid_pp - Ra / (omega * Xqpp) * (Vd - gamma_q1 * Edp + (1 - gamma_q1) * phiq_pp)) / (Xdpp + Ra ** 2 / (omega * omega * Xqpp))
         Iq = (Vd / omega + (Ra * Id / omega) - gamma_q1 * Edp + (1 - gamma_q1) * phiq_pp) / Xqpp

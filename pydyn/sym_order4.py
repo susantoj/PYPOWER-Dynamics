@@ -33,6 +33,12 @@ class sym_order4:
         self.opt = dynopt['iopt']
         self.omega_n = 2 * np.pi * dynopt['fn']
         
+        # Check for speed-voltage term option 
+        if 'speed_volt' in dynopt:
+            self.speed_volt = dynopt['speed_volt']
+        else:
+            self.speed_volt = False
+        
         self.parser(filename)
         
         # Equivalent Norton impedance for Ybus modification
@@ -114,10 +120,15 @@ class sym_order4:
         # Calculate Id and Iq (Norton equivalent current injection in dq frame)
         Eqp = self.states['Eqp']
         Edp = self.states['Edp']
-        omega = self.states['omega']
         Ra = self.params['Ra']
         Xdp = self.params['Xdp']
         Xqp = self.params['Xqp']
+        
+        # Check if speed-voltage term should be included
+        if self.speed_volt:
+            omega = self.states['omega']
+        else:
+            omega = 1
         
         Id = (Eqp - Ra / Xqp * (Vd - Edp) - Vq) / (Xdp + Ra ** 2 / Xqp)
         Iq = (Vd + Ra * Id - Edp) / Xqp
