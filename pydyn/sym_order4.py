@@ -187,7 +187,7 @@ class sym_order4:
     
     def solve_step(self,h,dstep):
         """
-        Solve machine differential equations for the next time step
+        Solve machine differential equations for the next stage in the integration step
         """
         
         # Initial state variables

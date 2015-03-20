@@ -233,7 +233,7 @@ class sym_order6b:
         
     def solve_step(self,h,dstep):
         """
-        Solve machine differential equations for the next step in modified Euler method iteration
+        Solve machine differential equations for the next stage in the integration step
         """
         
         # Initial state variables

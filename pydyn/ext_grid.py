@@ -62,17 +62,35 @@ class ext_grid:
         self.states['Eq'] = np.abs(Eq0)       
         self.states['omega'] = 1
         self.states['delta'] = delta0
+
+    def calc_currents(self, vt):
+        """
+        Solve grid current injections (in network reference frame)
+        """
+        delta = self.states['delta']
+        Eq = self.states['Eq']
+        Xdp = self.params['Xdp']
+        
+        p = np.abs(vt) * Eq * np.sin(delta - np.angle(vt)) / Xdp
+        
+        # Update signals
+        self.signals['P'] = p
+        self.signals['Vt'] = np.abs(vt)
+        
+        i_grid = Eq * np.exp(1j * delta) / np.complex(0,Xdp)
+        
+        return i_grid
         
     def solve_step(self,h,dstep):
         """
-        Solve differential equations for the next time step
+        Solve machine differential equations for the next stage in the integration step
         """
         # State variables
         omega_0 = self.states['omega']
         delta_0 = self.states['delta']
         
         # Solve swing equation
-        f1 = 1/(2 * self.params['H']) * (self.signals['Pm'] - self.signals['P'])
+        f1 = 1/(2 * self.params['H']) * (self.signals['Pm'] / omega_0 - self.signals['P'])
         k_omega = h * f1
         
         f2 = 2 * np.pi * self.params['fn'] * (omega_0 - 1)
@@ -116,22 +134,5 @@ class ext_grid:
                 self.states['omega'] = self.states0['omega'] + 1/6 * (self.dsteps['omega'][0] + 2*self.dsteps['omega'][1] + 2*self.dsteps['omega'][2] + k_omega)
                 self.states['delta'] = self.states0['delta'] + 1/6 * (self.dsteps['delta'][0] + 2*self.dsteps['delta'][1] + 2*self.dsteps['delta'][2] + k_delta)
         
-    def calc_currents(self, vt):
-        """
-        Solve grid current injections (in network reference frame)
-        """
-        delta = self.states['delta']
-        Eq = self.states['Eq']
-        Xdp = self.params['Xdp']
-        
-        p = np.abs(vt) * Eq * np.sin(delta - np.angle(vt)) / Xdp
-        
-        # Update signals
-        self.signals['P'] = p
-        self.signals['Vt'] = np.abs(vt)
-        
-        i_grid = Eq * np.exp(1j * delta) / np.complex(0,Xdp)
-        
-        return i_grid
     
     
