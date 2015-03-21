@@ -41,7 +41,7 @@ class events:
                 tokens = line.strip().split(',')
                 
                 # Parse signal events
-                if tokens[1].strip() in ['SIGNAL', 'FAULT', 'LOAD']:
+                if tokens[1].strip() in ['SIGNAL', 'FAULT', 'LOAD', 'STATE']:
                     self.event_stack.append([float(tokens[0].strip()), tokens[1].strip(), tokens[2].strip(), tokens[3].strip(), tokens[4].strip()])
                 
                 elif tokens[1].strip() in ['CLEAR_FAULT', 'TRIP_BRANCH']:
@@ -73,13 +73,21 @@ class events:
                     
                     print('SIGNAL event at t=' + str(t) + 's on element "' + obj_id + '". ' + sig_id + ' = ' + str(value) + '.')
                 
+                if event_type == 'STATE':
+                    obj_id = self.event_stack[0][2]
+                    sig_id = self.event_stack[0][3]
+                    value = float(self.event_stack[0][4])
+                    elements[obj_id].states[sig_id] = value
+                    
+                    print('STATE event at t=' + str(t) + 's on element "' + obj_id + '". ' + sig_id + ' = ' + str(value) + '.')
+                
                 if event_type == 'FAULT':
                     bus_id = int(self.event_stack[0][2])
                     Rf = float(self.event_stack[0][3])
                     Xf = float(self.event_stack[0][4])
                     
                     if Rf == 0:
-                        ppc["bus"][bus_id, GS] = 1e10
+                        ppc["bus"][bus_id, GS] = 1e6
                     elif Rf < 0:
                         ppc["bus"][bus_id, GS] = 0
                         Rf = 'Inf'
@@ -87,7 +95,7 @@ class events:
                         ppc["bus"][bus_id, GS] = 1 / Rf * baseMVA
                     
                     if Xf == 0:
-                        ppc["bus"][bus_id, BS] = -1e10
+                        ppc["bus"][bus_id, BS] = -1e6
                     elif Xf < 0:
                         ppc["bus"][bus_id, BS] = 0
                         Xf = 'Inf'
