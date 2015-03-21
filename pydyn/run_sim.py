@@ -23,7 +23,6 @@ Time-domain simulation engine
 
 from pydyn.interface import init_interfaces
 from pydyn.mod_Ybus import mod_Ybus
-from pydyn.version import pydyn_ver
 
 from scipy.sparse.linalg import splu
 import numpy as np
@@ -52,10 +51,6 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     # SETUP #
     #########
     
-    # Get version information
-    ver = pydyn_ver()
-    print('PYPOWER-Dynamics ' + ver['Version'] + ', ' + ver['Date'])
-    
     # Program options
     if dynopt:
         h = dynopt['h']             
@@ -75,7 +70,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     sources = []
     controllers = []
     for element in elements.values():
-        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid', 'pydyn.vsc_average']:
+        if element.__module__ in ['pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.sym_order4', 'pydyn.ext_grid']:
             sources.append(element)
             
         if element.__module__ == 'pydyn.controller':
@@ -87,6 +82,7 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     ##################
     # INITIALISATION #
     ##################
+    
     print('Initialising models...')
     
     # Run power flow and update bus voltages and angles in PYPOWER case object
