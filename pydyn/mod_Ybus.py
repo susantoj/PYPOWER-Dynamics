@@ -31,8 +31,8 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
     for element in elements.values():
         Ye = 0
         
-        # 4th/6th order machines
-        if element.__module__ in ['pydyn.sym_order4', 'pydyn.sym_order6a', 'pydyn.sym_order6b']:
+        # 4th/6th order machines and converters
+        if element.__module__ in ['pydyn.sym_order4', 'pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.vsc_average']:
             i = gen[element.gen_no,0]
             Ye = element.Yg
         
