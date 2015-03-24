@@ -2,6 +2,7 @@
 
 ID = GEN2
 GEN_NO = 1
+MVA_Rating = 100
 
 Ra = 0.0
 Xa = 0.0

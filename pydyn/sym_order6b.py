@@ -44,6 +44,19 @@ class sym_order6b:
         
         self.parser(filename)
         
+        # Convert impedances and H to 100MVA base
+        if 'MVA_Rating' in self.params.keys():
+            base_mva = self.params['MVA_Rating']
+            self.params['H'] = self.params['H'] * base_mva / 100
+            self.params['Ra'] = self.params['Ra'] * 100 / base_mva
+            self.params['Xa'] = self.params['Xa'] * 100 / base_mva
+            self.params['Xd'] = self.params['Xd'] * 100 / base_mva
+            self.params['Xdp'] = self.params['Xdp'] * 100 / base_mva
+            self.params['Xdpp'] = self.params['Xdpp'] * 100 / base_mva
+            self.params['Xq'] = self.params['Xq'] * 100 / base_mva
+            self.params['Xqp'] = self.params['Xqp'] * 100 / base_mva
+            self.params['Xqpp'] = self.params['Xqpp'] * 100 / base_mva
+        
         # Internal variables
         self.params['gamma_d1'] = (self.params['Xdpp'] - self.params['Xa']) / (self.params['Xdp'] - self.params['Xa'])
         self.params['gamma_d2'] = (1 - self.params['gamma_d1']) / (self.params['Xdp'] - self.params['Xa'])        
