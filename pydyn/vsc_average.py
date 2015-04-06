@@ -74,7 +74,7 @@ class vsc_average:
         """
         Solve grid current injections (in network reference frame)
         """
-        Edq = self.signals['Edq']
+        Edq = self.signals['Ed'] + 1j * self.signals['Eq']
         delta = np.angle(Edq)
                 
         # Calculate terminal voltage in dq reference frame
@@ -92,6 +92,7 @@ class vsc_average:
         Im = In + self.Yg * vt
         
         # Update signals
+        self.signals['Edq'] = Edq
         self.signals['Vd'] = Vd
         self.signals['Vq'] = Vq
         self.signals['Id'] = Id
