@@ -315,7 +315,7 @@ class sym_order6b:
                 self.dsteps['omega'] = [k_omega]
                 self.states['delta'] = delta_0 + k_delta
                 self.dsteps['delta'] = [k_delta]
-            else:
+            elif dstep == 1:
                 # Corrector step
                 self.states['Eqp'] = Eqp_0 + 0.5 * (k_Eqp - self.dsteps['Eqp'][0])
                 self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])

@@ -142,9 +142,6 @@ class sym_order4:
         else:
             omega = 1
         
-        Id = (Eqp - Ra / Xqp * (Vd - Edp) - Vq) / (Xdp + Ra ** 2 / Xqp)
-        Iq = (Vd + Ra * Id - Edp) / Xqp
-        
         Id = (Eqp - Ra / (Xqp * omega) * (Vd - Edp) - Vq / omega) / (Xdp + Ra ** 2 / (omega * omega * Xqp))
         Iq = (Vd / omega + Ra * Id / omega - Edp) / Xqp
         
@@ -246,7 +243,7 @@ class sym_order4:
                 self.dsteps['omega'] = [k_omega]
                 self.states['delta'] = delta_0 + k_delta
                 self.dsteps['delta'] = [k_delta]
-            else:
+            elif dstep == 1:
                 # Corrector step
                 self.states['Eqp'] = Eqp_0 + 0.5 * (k_Eqp - self.dsteps['Eqp'][0])
                 self.states['Edp'] = Edp_0 + 0.5 * (k_Edp - self.dsteps['Edp'][0])
