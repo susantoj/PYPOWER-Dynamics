@@ -1,0 +1,17 @@
+# Test motor parameters
+
+ID = MOT1
+BUS_NO = 1
+MVA_Rating = 20
+
+Rs = 0.01383
+Xs = 0.11316
+Xm = 2.51217
+Xr = 0.05658
+Rr = 0.01383
+Xr2 = 0.3651
+Rr2 = 0.181
+H = 0.873266
+
+# Load coefficient
+a = 0.1

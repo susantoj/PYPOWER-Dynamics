@@ -1,0 +1,9 @@
+# Recorder set for SMIB test case
+# Record ID, Object ID, Signal Name, Signal/State
+
+MOT1:s, MOT1, s, STATE
+MOT1:P, MOT1, P, SIGNAL
+MOT1:Q, MOT1, Q, SIGNAL
+MOT1:Id, MOT1, Id, SIGNAL
+MOT1:Iq, MOT1, Iq, SIGNAL
+MOT1:Vt, MOT1, Vt, SIGNAL

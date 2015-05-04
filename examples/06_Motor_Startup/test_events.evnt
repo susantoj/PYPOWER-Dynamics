@@ -1,0 +1,4 @@
+# Event Stack for motor test case
+# Event time (s), Event type, Object ID, [Parameters]
+
+1.0, SIGNAL, MOT1, start, 1
