@@ -40,15 +40,16 @@ class asym_1cage:
         
         # Convert parameters to 100MVA base
         if 'MVA_Rating' in self.params.keys():
-            base_mva = self.params['MVA_Rating']
-            self.params['H'] = self.params['H'] * base_mva / 100
-            self.params['a'] = self.params['a'] * base_mva / 100
-            self.params['Rs'] = self.params['Rs'] * 100 / base_mva
-            self.params['Xs'] = self.params['Xs'] * 100 / base_mva
-            self.params['Xm'] = self.params['Xm'] * 100 / base_mva
-            self.params['Rr'] = self.params['Rr'] * 100 / base_mva
-            self.params['Xr'] = self.params['Xr'] * 100 / base_mva
-            self.omega_n = self.omega_n * base_mva / 100
+            self.base_mva = self.params['MVA_Rating']
+            self.params['H'] = self.params['H'] * self.base_mva / 100
+            self.params['a'] = self.params['a'] * self.base_mva / 100
+            self.params['Rs'] = self.params['Rs'] * 100 / self.base_mva
+            self.params['Xs'] = self.params['Xs'] * 100 / self.base_mva
+            self.params['Xm'] = self.params['Xm'] * 100 / self.base_mva
+            self.params['Rr'] = self.params['Rr'] * 100 / self.base_mva
+            self.params['Xr'] = self.params['Xr'] * 100 / self.base_mva
+        else:
+            self.base_mva = 100
         
         # Calculate internal parameters       
         self.params['X0'] = self.params['Xs'] + self.params['Xm']
@@ -216,10 +217,10 @@ class asym_1cage:
             Te = self.signals['Te']
             
             # Electrical differential equations
-            f1 = -self.omega_n * s_0 * Edp_0 - (Eqp_0 - (X0 - Xp) * Id) / T0p
+            f1 = (-self.omega_n * s_0 * Edp_0 - (Eqp_0 - (X0 - Xp) * Id) / T0p ) * self.base_mva / 100
             k_Eqp = h * f1
             
-            f2 = self.omega_n * s_0 * Eqp_0 - (Edp_0 + (X0 - Xp) * Iq) / T0p
+            f2 = (self.omega_n * s_0 * Eqp_0 - (Edp_0 + (X0 - Xp) * Iq) / T0p ) * self.base_mva / 100
             k_Edp = h * f2
             
             # Mechanical equation
