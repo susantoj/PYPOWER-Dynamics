@@ -42,7 +42,7 @@ class asym_2cage:
         if 'MVA_Rating' in self.params.keys():
             self.base_mva = self.params['MVA_Rating']
             self.params['H'] = self.params['H'] * self.base_mva / 100
-            #self.params['a'] = self.params['a'] * self.base_mva / 100
+            self.params['a'] = self.params['a'] * self.base_mva / 100
             self.params['Rs'] = self.params['Rs'] * 100 / self.base_mva
             self.params['Xs'] = self.params['Xs'] * 100 / self.base_mva
             self.params['Xm'] = self.params['Xm'] * 100 / self.base_mva
