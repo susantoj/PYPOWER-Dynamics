@@ -200,6 +200,7 @@ class asym_2cage:
             self.signals['Q'] = q
             self.signals['Vt'] = np.abs(vt)
             self.signals['Vang'] = np.angle(vt)
+            self.signals['omega'] =  1 - s
         
         else:
             Im = 0

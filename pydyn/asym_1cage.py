@@ -172,7 +172,7 @@ class asym_1cage:
             # Calculate power output and electrical torque
             p = -(Vd * Id + Vq * Iq)             
             q = -(Vq * Id - Vd * Iq)
-            Te = Edp * Id + Eqp * Iq
+            Te = (Edp * Id + Eqp * Iq) #/ self.omega_n
             
             # Calculate machine current injection (Norton equivalent current injection in network frame)
             In = (Id + 1j * Iq) * np.exp(1j * (-np.pi / 2))
@@ -188,6 +188,7 @@ class asym_1cage:
             self.signals['Q'] = q
             self.signals['Vt'] = np.abs(vt)
             self.signals['Vang'] = np.angle(vt)
+            self.signals['omega'] =  1 - s
         
         else:
             Im = 0
