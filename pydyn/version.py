@@ -16,8 +16,8 @@ def pydyn_ver(*args):
     """
 
     ver = {'Name': 'PYPOWER-Dynamics',
-           'Version': '1.0.1',
+           'Version': '1.1',
            'Release':  '',
-           'Date': '14-Mar-2015'}
+           'Date': '31-May-2015'}
 
     return ver
