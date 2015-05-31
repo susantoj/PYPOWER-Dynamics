@@ -33,9 +33,6 @@ Documentation is located in the [PYPOWER-Dynamics Wiki](https://github.com/susan
 License & Copyright
 ===================
 
-Copyright (C) 2014-2015 Julius Susanto
+Copyright (C) 2014-2015 Julius Susanto. All rights reserved.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the [GNU General Public License](http://www.gnu.org/licenses) as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
+The code in PYPOWER-Dynamics is distributed under the 3-clause BSD license found in the LICENSE file.
