@@ -30,24 +30,19 @@ class asym_2cage:
         # Convert parameters to 100MVA base
         if 'MVA_Rating' in self.params.keys():
             self.base_mva = self.params['MVA_Rating']
-            self.params['H'] = self.params['H'] * self.base_mva / 100
-            self.params['a'] = self.params['a'] * self.base_mva / 100
-            self.params['Rs'] = self.params['Rs'] * 100 / self.base_mva
-            self.params['Xs'] = self.params['Xs'] * 100 / self.base_mva
-            self.params['Xm'] = self.params['Xm'] * 100 / self.base_mva
-            self.params['Rr'] = self.params['Rr'] * 100 / self.base_mva
-            self.params['Xr'] = self.params['Xr'] * 100 / self.base_mva
-            self.params['Rr2'] = self.params['Rr2'] * 100 / self.base_mva
-            self.params['Xr2'] = self.params['Xr2'] * 100 / self.base_mva
         else:
             self.base_mva = 100
         
+        # Calculate H from J (kg.m2) and pf (no of poles)
+        if 'J' in self.params and 'pf' in self.params:
+            self.params['H'] = 0.5 * self.params['J'] / (self.base_mva * 1e6) * (self.omega_n * 2 / self.params['pf']) ** 2
+        
         # Calculate internal parameters       
-        self.params['X0'] = self.params['Xs'] + self.params['Xm']
-        self.params['Xp'] = self.params['Xs'] + self.params['Xr'] * self.params['Xm'] / (self.params['Xr'] + self.params['Xm'])
-        self.params['Xpp'] = self.params['Xs'] + self.params['Xr'] * self.params['Xr2'] * self.params['Xm'] / (self.params['Xr'] * self.params['Xr2'] + self.params['Xm'] * self.params['Xr'] + self.params['Xm'] * self.params['Xr2'])
-        self.params['T0p'] = (self.params['Xr'] + self.params['Xm']) / (self.omega_n * self.params['Rr'])
-        self.params['T0pp'] = (self.params['Xr2'] + (self.params['Xr'] * self.params['Xm']) / (self.params['Xr'] + self.params['Xm'])) / (self.omega_n * self.params['Rr2'])
+        self.params['X0'] = (self.params['Xs'] + self.params['Xm'])
+        self.params['Xp'] = (self.params['Xs'] + self.params['Xr'] * self.params['Xm'] / (self.params['Xr'] + self.params['Xm']))
+        self.params['Xpp'] = (self.params['Xs'] + self.params['Xr'] * self.params['Xr2'] * self.params['Xm'] / (self.params['Xr'] * self.params['Xr2'] + self.params['Xm'] * self.params['Xr'] + self.params['Xm'] * self.params['Xr2']))
+        self.params['T0p'] = (self.params['Xr'] + self.params['Xm']) / (self.params['Rr'])
+        self.params['T0pp'] = (self.params['Xr2'] + (self.params['Xr'] * self.params['Xm']) / (self.params['Xr'] + self.params['Xm'])) / (self.params['Rr2'])
         
         # Motor start signal
         self.signals['start'] = 0
@@ -94,26 +89,7 @@ class asym_2cage:
         Te0 = 0
         
         """
-        # Placeholder code for initialising a running motor
-        Rs = self.params['Rs']
-        X0 = self.params['X0']
-        T0p = self.params['T0p']
-        Xp = self.params['Xp']
-        
-        # Calculate initial armature current
-        Ia0 =  np.conj(S0 / vt0)
-        phi0 = np.angle(Ia0)
-        
-        # Convert currents to rotor reference frame
-        Id0 = np.abs(Ia0) * np.sin(-np.pi/2 - phi0)
-        Iq0 = np.abs(Ia0) * np.cos(-np.pi/2 - phi0)
-        
-        Vd0 = -np.abs(vt0) * np.sin(np.angle(vt0))
-        Vq0 = np.abs(vt0) * np.cos(np.angle(vt0))
-        
-        # Calculate active and reactive power
-        p0 = -(Vd0 * Id0 + Vq0 * Iq0)             
-        q0 = -(Vq0 * Id0 - Vd0 * Iq0)
+        # Placeholder for initialising a running motor
         """
 
         # Initialise signals, states and parameters        
@@ -126,6 +102,7 @@ class asym_2cage:
         self.signals['Q'] = q0
         self.signals['Te'] = Te0
         self.signals['omega'] = 1 - slip0
+        self.signals['Im'] = 0
         
         self.states['s'] = slip0
         self.states['Eqp'] = Eqp0
@@ -155,16 +132,12 @@ class asym_2cage:
             Vq = np.abs(vt) * np.cos(np.angle(vt))
             
             # Calculate Id and Iq (Norton equivalent current injection in dq frame)
-            #Eqp = self.states['Eqp']
-            #Edp = self.states['Edp']
             Eqpp = self.states['Eqpp']
             Edpp = self.states['Edpp']
             s = self.states['s']
             Rs = self.params['Rs']
             X0 = self.params['X0']
-            #Xp = self.params['Xp']
             Xpp = self.params['Xpp']
-            #T0p = self.params['T0p']
             T0pp = self.params['T0pp']
             
             Iq = (Rs / Xpp * (Vq - Eqpp) - Vd + Edpp) / (Xpp + Rs ** 2 / Xpp)
@@ -173,11 +146,11 @@ class asym_2cage:
             # Calculate power output and electrical torque
             p = -(Vd * Id + Vq * Iq)             
             q = -(Vq * Id - Vd * Iq)
-            Te = Edpp * Id + Eqpp * Iq
+            Te = (Edpp * Id + Eqpp * Iq)
             
             # Calculate machine current injection (Norton equivalent current injection in network frame)
             In = (Id + 1j * Iq) * np.exp(1j * (-np.pi / 2))
-            Im = -In #+ self.Ym * vt
+            Im = -In * self.base_mva / 100 #+ self.Ym * vt
             
             # Update signals
             self.signals['Id'] = Id
@@ -187,6 +160,7 @@ class asym_2cage:
             self.signals['Te'] = Te
             self.signals['P'] = p
             self.signals['Q'] = q
+            self.signals['Im'] = np.abs(Im)
             self.signals['Vt'] = np.abs(vt)
             self.signals['Vang'] = np.angle(vt)
             self.signals['omega'] =  1 - s
@@ -223,16 +197,16 @@ class asym_2cage:
             Te = self.signals['Te']
             
             # Electrical differential equations
-            f1 = (-self.omega_n * s_0 * Edp_0 - (Eqp_0 - (X0 - Xp) * Id) / T0p ) * self.base_mva / 100
-            k_Eqp = h * f1
+            f1 = self.omega_n / np.pi * (-s_0 * Edp_0 - (Eqp_0 - (X0 - Xp) * Id) / T0p ) 
+            k_Eqp = h * f1 
             
-            f2 = (self.omega_n * s_0 * Eqp_0 - (Edp_0 + (X0 - Xp) * Iq) / T0p ) * self.base_mva / 100
+            f2 = self.omega_n / np.pi * (s_0 * Eqp_0 - (Edp_0 + (X0 - Xp) * Iq) / T0p ) 
             k_Edp = h * f2
             
-            f3 = f1 + (self.omega_n * s_0 * (Edp_0 - Edpp_0) + (Eqp_0 - Eqpp_0 + (Xp - Xpp) * Id) / T0pp ) * self.base_mva / 100
+            f3 = f1 + self.omega_n / np.pi * (s_0 * (Edp_0 - Edpp_0) + (Eqp_0 - Eqpp_0 + (Xp - Xpp) * Id) / T0pp ) 
             k_Eqpp = h * f3
             
-            f4 = f2 + (-self.omega_n * s_0 * (Eqp_0 - Eqpp_0) + (Edp_0 - Edpp_0 - (Xp - Xpp) * Iq) / T0pp ) * self.base_mva / 100
+            f4 = f2 + self.omega_n / np.pi * (-s_0 * (Eqp_0 - Eqpp_0) + (Edp_0 - Edpp_0 - (Xp - Xpp) * Iq) / T0pp ) 
             k_Edpp = h * f4
             
             # Mechanical equation
