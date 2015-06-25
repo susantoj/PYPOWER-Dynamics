@@ -122,6 +122,7 @@ class controller:
                 yo = float(line[2])
             
             elif block == 'GAIN':
+                yi = self.signals[line[2]]
                 p = float(line[3])
                 yo = blocks.gain_block(yi,p)
             
