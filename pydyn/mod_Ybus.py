@@ -22,12 +22,12 @@ def mod_Ybus(Ybus, elements, bus, gen, baseMVA):
         
         # 4th/6th order machines and converters
         if element.__module__ in ['pydyn.sym_order4', 'pydyn.sym_order6a', 'pydyn.sym_order6b', 'pydyn.vsc_average']:
-            i = gen[element.gen_no,0]
+            i = gen[element.gen_no,0].astype(int)
             Ye = element.Yg
         
         # External grid
         if element.__module__ == 'pydyn.ext_grid':
-            i = gen[element.gen_no,0]
+            i = gen[element.gen_no,0].astype(int)
             Ye = 1 / (1j * element.params['Xdp'])
         
         if Ye != 0:
