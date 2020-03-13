@@ -98,12 +98,12 @@ def run_sim(ppc, elements, dynopt = None, events = None, recorder = None):
     for source in sources:
         if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
             # Asynchronous machine
-            source_bus = ppc_int['bus'][source.bus_no,0]
+            source_bus = int(ppc_int['bus'][source.bus_no,0])
             v_source = v0[source_bus]
             source.initialise(v_source,0)
         else:
             # Generator or VSC
-            source_bus = ppc_int['gen'][source.gen_no,0]
+            source_bus = int(ppc_int['gen'][source.gen_no,0])
             S_source = np.complex(results["gen"][source.gen_no, 1] / baseMVA, results["gen"][source.gen_no, 2] / baseMVA)
             v_source = v0[source_bus]
             source.initialise(v_source,S_source)
@@ -192,10 +192,10 @@ def solve_network(sources, v_prev, Ybus_inv, ppc_int, no_buses, max_err, max_ite
         for source in sources:
             if source.__module__ in ['pydyn.asym_1cage', 'pydyn.asym_2cage']:
                 # Asynchronous machine
-                source_bus = ppc_int['bus'][source.bus_no,0]
+                source_bus = int(ppc_int['bus'][source.bus_no,0])
             else:
                 # Generators or VSC
-                source_bus = ppc_int['gen'][source.gen_no,0]
+                source_bus = int(ppc_int['gen'][source.gen_no,0])
                 
             I[source_bus] = source.calc_currents(v_prev[source_bus])
             
